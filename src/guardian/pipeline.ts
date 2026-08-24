@@ -12,6 +12,8 @@ import { assessPullRequestRisk } from './risk';
 import type { PullRequestRisk } from './risk';
 import { buildCheckRun, renderPullRequestComment } from './report';
 import type { ReportContext } from './report';
+import { reviewPullRequest, renderReviewMarkdown } from '@/ai/tasks/review-pull-request';
+import type { PullRequestReviewInput } from '@/ai/tasks/review-pull-request';
 import { getRepositoryPolicy } from '@/lib/repositories';
 import { getEnv } from '@/lib/env';
 import { createLogger } from '@/lib/logger';
@@ -250,7 +252,29 @@ export async function scanPullRequest(options: PullRequestScanOptions): Promise<
     checkRunId = await postCheckRun(client, repository, scanId, check);
   }
   if (!options.dryRun && policy.postPrComments) {
-    commentId = await postComment(client, repository, number, pullRequestId, renderPullRequestComment(risk, ctx));
+    /*
+     * The AI review is appended to the deterministic comment, never
+     * substituted for it. The check conclusion above is already decided and
+     * is not revisited: an AI opinion must not be able to change whether a
+     * pull request is blocked.
+     */
+    const aiSection = await buildAIReviewSection({
+      repositoryId: repository.id,
+      repositoryFullName: repository.fullName,
+      pullRequestNumber: number,
+      title: options.title ?? null,
+      author: options.authorLogin ?? null,
+      risk,
+      changedFiles: files.map((file) => ({
+        path: file.filename,
+        additions: file.additions,
+        deletions: file.deletions,
+        status: file.status,
+      })),
+    });
+
+    const body = renderPullRequestComment(risk, ctx) + (aiSection ? `\n\n${aiSection}` : '');
+    commentId = await postComment(client, repository, number, pullRequestId, body);
   }
 
   await db
@@ -454,6 +478,31 @@ async function postCheckRun(
  * Editing one comment rather than appending a new one per push is the
  * difference between a useful bot and a muted one.
  */
+/**
+ * Produce the AI review section of the pull request comment.
+ *
+ * Returns null — never throws, never rejects — when AI is unconfigured, slow,
+ * broken or returns something invalid. The deterministic comment is the
+ * product; this is an enhancement to it, and the guardian must behave
+ * identically whether or not an inference provider happens to be reachable.
+ */
+async function buildAIReviewSection(input: PullRequestReviewInput): Promise<string | null> {
+  try {
+    const result = await reviewPullRequest(input);
+    if (!result.ok) {
+      log.info('Skipping AI review section', { reason: result.reason, pr: input.pullRequestNumber });
+      return null;
+    }
+    return renderReviewMarkdown(result.data, result.model);
+  } catch (err) {
+    log.warn('AI review failed; posting deterministic comment only', {
+      pr: input.pullRequestNumber,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  }
+}
+
 async function postComment(
   client: GitHubClient,
   repository: RepositoryRef,
