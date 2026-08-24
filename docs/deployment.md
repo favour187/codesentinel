@@ -17,6 +17,8 @@ One Web Service. Scanner work runs inside the web process (the engine is not tie
    **Start Command:** `sh scripts/render-start.sh`
 
    Render sets `NODE_ENV=production` during install, which skips Tailwind unless it lives in `dependencies` (it does now). Pin Node to **20.x** (see `.node-version`).
+
+   **Do not set `NODE_OPTIONS=--max-old-space-size=384` as a service env var.** That cap applies to the *build* too and kills `tsc`. The start script already caps the running app. Delete `NODE_OPTIONS` in the Render dashboard if you added it.
 2. Health check path: `/api/health`.
 3. Set `APP_URL` to `https://<service>.onrender.com`.
 4. Prefer Render Postgres (or Neon) and set `DATABASE_URL`. **Do not run PGlite on Render** — the WASM engine will OOM a 512 MB instance.

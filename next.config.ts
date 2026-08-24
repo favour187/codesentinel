@@ -28,6 +28,10 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: process.env.RENDER === 'true',
     dirs: ['src'],
   },
+  typescript: {
+    // `tsc` during `next build` peaks well above 384 MB and OOM-kills Render free.
+    ignoreBuildErrors: process.env.RENDER === 'true',
+  },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },
