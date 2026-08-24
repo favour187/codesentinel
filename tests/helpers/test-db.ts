@@ -2,7 +2,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import { sql } from 'drizzle-orm';
 import * as schema from '@/db/schema';
-import { BOOTSTRAP_SQL } from '@/db/bootstrap';
+import { BOOTSTRAP_SQL, splitStatements } from '@/db/bootstrap';
 
 /**
  * Creates a fresh, fully-migrated, in-memory PostgreSQL database per test.
@@ -30,10 +30,10 @@ export async function createTestDb(): Promise<TestDb> {
   openClients.add(client);
   const database = drizzle(client, { schema });
 
-  for (const statement of BOOTSTRAP_SQL.split(';')
-    .map((s) => s.trim())
-    .filter(Boolean)) {
-    await database.execute(sql.raw(`${statement};`));
+  // Reuse the production splitter rather than re-implementing it: a second
+  // copy here is how the test harness and the real bootstrap drift apart.
+  for (const statement of splitStatements(BOOTSTRAP_SQL)) {
+    await database.execute(sql.raw(statement));
   }
   return database;
 }

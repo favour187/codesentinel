@@ -416,11 +416,23 @@ export async function bootstrapSchema(database: Database): Promise<void> {
   log.info('Schema ready', { durationMs: Date.now() - started, tables: TABLE_NAMES.length });
 }
 
-/** Split DDL on semicolons at statement boundaries. */
-function splitStatements(ddl: string): string[] {
-  return ddl
+/**
+ * Split DDL on semicolons at statement boundaries.
+ *
+ * Comment lines are stripped *before* splitting, not filtered out after. A
+ * semicolon inside a `--` comment would otherwise cut the text mid-sentence
+ * and hand the fragment to the server as a statement, which fails with a
+ * baffling syntax error pointing at an English word.
+ */
+export function splitStatements(ddl: string): string[] {
+  const withoutComments = ddl
+    .split('\n')
+    .filter((line) => !line.trim().startsWith('--'))
+    .join('\n');
+
+  return withoutComments
     .split(';')
     .map((s) => s.trim())
-    .filter((s) => s.length > 0 && !s.startsWith('--'))
+    .filter((s) => s.length > 0)
     .map((s) => `${s};`);
 }

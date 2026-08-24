@@ -87,6 +87,14 @@ export type WebhookStatus = (typeof WEBHOOK_STATUSES)[number];
 export const JOB_STATUSES = ['queued', 'running', 'completed', 'failed', 'cancelled'] as const;
 export type JobStatus = (typeof JOB_STATUSES)[number];
 
+/** Kinds of fact a team can record in repository memory. Human-authored only. */
+export const MEMORY_KINDS = ['decision', 'exception', 'accepted_risk', 'policy', 'convention'] as const;
+export type MemoryKind = (typeof MEMORY_KINDS)[number];
+
+/** Outcome of an AI request, for the activity log. */
+export const AI_REQUEST_STATUSES = ['ok', 'failed', 'unavailable', 'cached'] as const;
+export type AIRequestStatus = (typeof AI_REQUEST_STATUSES)[number];
+
 const timestamps = {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -542,8 +550,7 @@ export const aiRequests = pgTable(
     /** Provider that actually answered ('featherless' | 'groq'), null if none did. */
     provider: text('provider'),
     model: text('model'),
-    /** ok | failed | unavailable | cached */
-    status: text('status').notNull(),
+    status: text('status').$type<AIRequestStatus>().notNull(),
     durationMs: integer('duration_ms'),
     promptTokens: integer('prompt_tokens'),
     completionTokens: integer('completion_tokens'),
@@ -580,8 +587,7 @@ export const repositoryMemory = pgTable(
     repositoryId: uuid('repository_id')
       .notNull()
       .references(() => repositories.id, { onDelete: 'cascade' }),
-    /** decision | exception | accepted_risk | policy | convention */
-    kind: text('kind').notNull().default('decision'),
+    kind: text('kind').$type<MemoryKind>().notNull().default('decision'),
     title: text('title').notNull(),
     body: text('body').notNull(),
     /** Optional paths this fact applies to, for relevance filtering. */

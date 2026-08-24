@@ -59,8 +59,13 @@ const RULES: readonly Rule[] = [
  * prompt harder to read for zero security benefit, and would hide the fact
  * that a placeholder (rather than a real credential) is what is in the file.
  */
+/*
+ * The trailing `}` is optional on the `${VAR}` form: the assignment rule's
+ * capture group stops before `}`, so an interpolation arrives here as
+ * `${DB_PASSWORD` and would otherwise be mistaken for a real value.
+ */
 const PLACEHOLDER =
-  /^(?:x{3,}|\*{3,}|\.{3,}|<[^>]*>|\$\{[^}]*\}|%[a-z_]+%|process\.env\.[a-z_0-9.[\]'"]+|null|none|undefined|true|false|changeme|change[_-]?me|example|examples?|sample|placeholder|redacted|dummy|test|testing|fake|foo|bar|baz|your[_-].*|my[_-]?secret|todo|tbd|abc123|123456\d*)$/i;
+  /^(?:x{3,}|\*{3,}|\.{3,}|<[^>]*>?|\$\{[^}]*\}?|%[a-z_]+%|process\.env\.[a-z_0-9.[\]'"]+|null|none|undefined|true|false|changeme|change[_-]?me|example|examples?|sample|placeholder|redacted|dummy|test|testing|fake|foo|bar|baz|your[_-].*|my[_-]?secret|todo|tbd|abc123|123456\d*)$/i;
 
 export interface RedactionResult {
   readonly text: string;
