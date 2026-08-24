@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { aiRequests } from '@/db/schema';
-import { isAIConfigured, parseJsonLoosely, runAITask, truncate } from '@/ai/router';
+import { runAITask } from '@/ai/router';
 import { AIProviderError } from '@/ai/provider';
 import type { AICompletion, AICompletionRequest, AIProvider } from '@/ai/provider';
 import { createTestDb, seedRepository } from '../helpers/test-db';

@@ -68,3 +68,166 @@ export async function seedRepository(
 
   return { userId: user!.id, repositoryId: repo!.id };
 }
+
+export interface SeedFile {
+  path: string;
+  language?: string | null;
+  loc?: number;
+  imports?: string[];
+  exports?: string[];
+  kind?: string | null;
+  complexity?: number;
+  riskScore?: number;
+}
+
+export interface SeedFinding {
+  ruleId?: string;
+  scannerId?: string;
+  severity?: schema.Severity;
+  category?: schema.Category;
+  status?: schema.FindingStatus;
+  title?: string;
+  description?: string;
+  filePath?: string | null;
+  lineStart?: number | null;
+  lineEnd?: number | null;
+  evidence?: string | null;
+  confidence?: number;
+  remediation?: string | null;
+}
+
+/**
+ * Seed a completed scan with files, findings and tests.
+ *
+ * Retrieval, blast radius and debt all read from the *latest completed scan*,
+ * so anything exercising them needs a realistic scan row rather than bare
+ * findings. Returns the ids the caller needs to assert against.
+ */
+export async function seedScan(
+  database: TestDb,
+  repositoryId: string,
+  opts: {
+    files?: SeedFile[];
+    findings?: SeedFinding[];
+    tests?: Array<{ filePath: string; framework?: string; coversPaths?: string[]; testCount?: number }>;
+    dependencies?: Array<{
+      name: string;
+      version?: string;
+      isDirect?: boolean;
+      isDev?: boolean;
+      ecosystem?: string;
+      vulnerabilities?: Array<Record<string, unknown>>;
+      latestVersion?: string | null;
+    }>;
+    status?: schema.ScanStatus;
+    health?: number;
+  } = {},
+) {
+  const [scan] = await database
+    .insert(schema.scans)
+    .values({
+      repositoryId,
+      status: opts.status ?? 'completed',
+      trigger: 'manual',
+      filesScanned: opts.files?.length ?? 0,
+      linesScanned: (opts.files ?? []).reduce((sum, f) => sum + (f.loc ?? 0), 0),
+      finishedAt: new Date(),
+    })
+    .returning();
+
+  const scanId = scan!.id;
+
+  if (opts.files?.length) {
+    await database.insert(schema.files).values(
+      opts.files.map((f) => ({
+        repositoryId,
+        scanId,
+        path: f.path,
+        language: f.language === undefined ? 'typescript' : f.language,
+        loc: f.loc ?? 50,
+        bytes: (f.loc ?? 50) * 30,
+        imports: f.imports ?? [],
+        exports: f.exports ?? [],
+        kind: f.kind ?? 'source',
+        complexity: f.complexity ?? 5,
+        riskScore: f.riskScore ?? 0,
+      })),
+    );
+  }
+
+  const findingIds: string[] = [];
+  if (opts.findings?.length) {
+    const rows = await database
+      .insert(schema.findings)
+      .values(
+        opts.findings.map((f, i) => ({
+          scanId,
+          repositoryId,
+          fingerprint: `fp-${i}-${f.ruleId ?? 'rule'}-${f.filePath ?? 'global'}`,
+          ruleId: f.ruleId ?? 'security/sql-injection',
+          scannerId: f.scannerId ?? 'security',
+          severity: f.severity ?? ('critical' as schema.Severity),
+          category: f.category ?? ('security' as schema.Category),
+          status: f.status ?? ('open' as schema.FindingStatus),
+          title: f.title ?? 'SQL injection via string concatenation',
+          description: f.description ?? 'User input is concatenated directly into a SQL query.',
+          filePath: f.filePath === undefined ? 'src/db/users.ts' : f.filePath,
+          lineStart: f.lineStart === undefined ? 12 : f.lineStart,
+          lineEnd: f.lineEnd === undefined ? 12 : f.lineEnd,
+          evidence: f.evidence === undefined ? 'const q = "SELECT * FROM users WHERE id = " + id;' : f.evidence,
+          confidence: f.confidence ?? 0.9,
+          remediation: f.remediation === undefined ? 'Use a parameterised query.' : f.remediation,
+        })),
+      )
+      .returning();
+
+    findingIds.push(...rows.map((r) => r.id));
+  }
+
+  if (opts.tests?.length) {
+    await database.insert(schema.tests).values(
+      opts.tests.map((t) => ({
+        repositoryId,
+        scanId,
+        filePath: t.filePath,
+        framework: t.framework ?? 'vitest',
+        testCount: t.testCount ?? 3,
+        coversPaths: t.coversPaths ?? [],
+        hasAssertions: true,
+      })),
+    );
+  }
+
+  if (opts.dependencies?.length) {
+    await database.insert(schema.dependencies).values(
+      opts.dependencies.map((d) => ({
+        repositoryId,
+        scanId,
+        ecosystem: d.ecosystem ?? 'npm',
+        name: d.name,
+        version: d.version ?? '1.0.0',
+        versionSpec: `^${d.version ?? '1.0.0'}`,
+        isDev: d.isDev ?? false,
+        isDirect: d.isDirect ?? true,
+        manifestPath: 'package.json',
+        vulnerabilities: (d.vulnerabilities ?? []) as never,
+        latestVersion: d.latestVersion ?? null,
+      })),
+    );
+  }
+
+  if (opts.health !== undefined) {
+    await database.insert(schema.healthSnapshots).values({
+      repositoryId,
+      scanId,
+      health: opts.health,
+      security: opts.health,
+      reliability: opts.health,
+      quality: opts.health,
+      testing: opts.health,
+      performance: opts.health,
+    });
+  }
+
+  return { scanId, findingIds };
+}

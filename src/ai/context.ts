@@ -182,9 +182,18 @@ export async function getMemory(repositoryId: string, paths?: readonly string[])
   /*
    * A fact scoped to specific paths only applies when one of those paths is in
    * play. Unscoped facts (repository-wide policies) always apply.
+   *
+   * A scope may be a file or a directory, and users write directories both
+   * with and without a trailing slash, so it is normalised away before the
+   * prefix comparison.
    */
   return facts.filter(
-    (f) => f.paths.length === 0 || f.paths.some((p) => paths.some((q) => q === p || q.startsWith(`${p}/`))),
+    (f) =>
+      f.paths.length === 0 ||
+      f.paths.some((raw) => {
+        const scope = raw.replace(/\/+$/, '');
+        return paths.some((q) => q === scope || q.startsWith(`${scope}/`));
+      }),
   );
 }
 
