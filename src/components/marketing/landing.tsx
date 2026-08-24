@@ -113,6 +113,10 @@ export async function Landing({ error }: { error?: string | null }) {
             </div>
           )}
         </section>
+
+        <p className="mt-16 text-center text-xs text-[hsl(var(--muted-foreground))]">
+          Built for ReverieHacks 2026 · Software Development · hosted on Render
+        </p>
       </main>
     </div>
   );

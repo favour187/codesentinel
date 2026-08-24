@@ -1,5 +1,10 @@
 # Demo
 
+## ReverieHacks 2026 (judges)
+
+Live: https://codesentinel-3yg4.onrender.com/?judge=1  
+Track: Software Development. Full pack: [`REVERIEHACKS.md`](./REVERIEHACKS.md).
+
 ## 30-second pitch
 
 Code assistants help you write code. CodeSentinel is an autonomous **guardian** for a GitHub repository: it scans real files, maps how a change can spread, explains findings with optional grounded AI, and never applies a fix without review.

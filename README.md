@@ -2,6 +2,8 @@
 
 **Your repository's autonomous code guardian.**
 
+Built for **[ReverieHacks 2026](https://reverie-hacks-2026.devpost.com/)** — **Software Development** track. Live on **Render**: [codesentinel-3yg4.onrender.com](https://codesentinel-3yg4.onrender.com). Judge notes: [`docs/REVERIEHACKS.md`](./docs/REVERIEHACKS.md).
+
 Code assistants help developers *write* code. CodeSentinel helps them **understand, protect, and verify** a repository.
 
 It connects to GitHub (or a local demo fixture), runs deterministic scanners on real files, maps how code depends on itself, and optionally uses an LLM only to explain evidence it already has. Fixes are proposed as diffs. Nothing is applied without approval.
