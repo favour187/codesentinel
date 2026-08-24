@@ -50,8 +50,8 @@ export default async function TeamPage() {
           </ul>
 
           <p className="mt-6 border-t border-[hsl(var(--border))] pt-5 text-xs leading-relaxed text-[hsl(var(--muted-foreground))]">
-            Access is derived from repository ownership and explicit membership. Collaborator sync from a GitHub
-            App installation arrives with Guardian automation in Phase 4.
+            Access is derived from repository ownership and explicit membership rows. Invites from GitHub
+            collaborators are not synced automatically in this MVP.
           </p>
         </CardContent>
       </Card>

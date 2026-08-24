@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getOrCreateDemoUser } from '@/lib/auth/demo-session';
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from '@/lib/auth/session';
+import { ensureDemoRepository } from '@/lib/demo/register';
 import { createLogger } from '@/lib/logger';
 import { redirectTo } from '@/lib/http';
 
@@ -19,6 +20,7 @@ const log = createLogger('api:auth:demo');
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const demoUser = await getOrCreateDemoUser();
+    await ensureDemoRepository(demoUser.id);
     const token = await createSessionToken({ userId: demoUser.id, login: demoUser.login, demo: true });
 
     const response = redirectTo(request, '/');

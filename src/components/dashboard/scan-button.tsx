@@ -1,0 +1,41 @@
+'use client';
+
+import * as React from 'react';
+import { useRouter } from 'next/navigation';
+import { Loader2, Play } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+export function ScanButton({ repositoryId }: { repositoryId: string }) {
+  const router = useRouter();
+  const [pending, setPending] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  async function run() {
+    setPending(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/repositories/${repositoryId}/scan`, { method: 'POST' });
+      const body = (await res.json()) as { ok?: boolean; error?: string };
+      if (!res.ok || !body.ok) throw new Error(body.error ?? 'Scan failed');
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Scan failed');
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-end gap-2">
+      <Button onClick={run} disabled={pending} size="sm">
+        {pending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Play className="size-4" aria-hidden="true" />}
+        {pending ? 'Scanning…' : 'Run scan'}
+      </Button>
+      {error ? (
+        <p role="alert" className="max-w-xs text-right text-xs text-[hsl(var(--critical))]">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}

@@ -5,6 +5,19 @@ container.
 
 ---
 
+## Render (hackathon default)
+
+One Web Service. Scanner work runs inside the web process (the engine is not tied to HTTP and can move later).
+
+1. Blueprint: `render.yaml`, or create a Node service with `npm ci && npm run build` / `npm start`.
+2. Health check path: `/api/health`.
+3. Set `APP_URL` to `https://<service>.onrender.com`.
+4. Prefer a Render Postgres instance and set `DATABASE_URL`. Without it the app still boots on PGlite (ephemeral on Render).
+5. Generate `SESSION_SECRET`. Set `ENCRYPTION_KEY` if you store GitHub tokens.
+6. Apply schema once: `npm run db:migrate` against `DATABASE_URL`.
+
+Do not put API keys or PEMs in the repo. Keepalive is optional and must not be required for correctness.
+
 ## Before you deploy
 
 A production deployment differs from local development in three ways that matter:

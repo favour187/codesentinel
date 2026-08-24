@@ -1,26 +1,34 @@
-import { ShieldCheck, Radar, GitCommitHorizontal, Activity } from 'lucide-react';
-import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { ShieldCheck, Radar } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ScoreRing, ScoreBar } from '@/components/dashboard/score-ring';
 import { ConnectRepository } from '@/components/dashboard/connect-repository';
+import { ScanButton } from '@/components/dashboard/scan-button';
+import { Landing } from '@/components/marketing/landing';
 import { getCurrentUser } from '@/lib/auth/current-user';
 import { listRepositoriesForUser } from '@/lib/repositories';
-import { getLatestSnapshot, getRecentScans } from '@/lib/analysis-queries';
+import { getLatestSnapshot, getOpenFindings, getRecentScans } from '@/lib/analysis-queries';
+import { getRepositoryRisk } from '@/lib/guardian-risk';
 import { timeAgo } from '@/lib/utils';
+import type { Severity } from '@/db/schema';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Overview' };
 
-/**
- * Overview — answers one question above the fold:
- * "Is this repository safe and healthy?"
- */
+const SEV: Record<Severity, 'critical' | 'high' | 'medium' | 'low' | 'info'> = {
+  critical: 'critical',
+  high: 'high',
+  medium: 'medium',
+  low: 'low',
+  info: 'info',
+};
+
 export default async function OverviewPage() {
   const user = await getCurrentUser();
-  if (!user) redirect('/login');
+  if (!user) return <Landing />;
 
   const repos = await listRepositoriesForUser(user.id);
   const repo = repos[0];
@@ -30,27 +38,35 @@ export default async function OverviewPage() {
       <>
         <PageHeader
           title="Overview"
-          description="Connect a repository and CodeSentinel will start guarding it."
+          description="Connect GitHub to begin protecting a repository, or load the demo fixture."
         />
         <ConnectRepository githubConnected={!user.isDemo} demoAvailable />
       </>
     );
   }
 
-  const [snapshot, scans] = await Promise.all([getLatestSnapshot(repo.id), getRecentScans(repo.id, 5)]);
+  const [snapshot, scans, findings, risk] = await Promise.all([
+    getLatestSnapshot(repo.id),
+    getRecentScans(repo.id, 5),
+    getOpenFindings(repo.id, 5),
+    getRepositoryRisk(repo.id),
+  ]);
+
+  const top = findings[0];
 
   return (
     <>
       <PageHeader
         title="Overview"
-        description={`Health summary for ${repo.fullName}.`}
+        description={`Is ${repo.fullName} safe and healthy?`}
         actions={
           <div className="flex items-center gap-2">
             {repo.isDemo ? <Badge variant="medium">Demo fixture</Badge> : null}
-            <Badge variant={repo.guardianEnabled ? 'success' : 'outline'}>
+            <Badge variant={repo.guardianEnabled || repo.isDemo ? 'success' : 'outline'}>
               <Radar className="size-3" aria-hidden="true" />
-              Guardian {repo.guardianEnabled ? 'active' : 'off'}
+              Guardian {repo.guardianEnabled || repo.isDemo ? 'active' : 'off'}
             </Badge>
+            <ScanButton repositoryId={repo.id} />
           </div>
         }
       />
@@ -59,46 +75,95 @@ export default async function OverviewPage() {
         <EmptyState
           icon={ShieldCheck}
           title="No scan has run yet"
-          description={`${repo.fullName} is connected, but CodeSentinel has not analysed it yet. Health scores appear here after the first scan completes. Scanning arrives in Phase 2.`}
+          description="Run a scan to analyse this repository with the production scanners. Health scores appear after the first completed scan."
         />
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
           <Card>
-            <CardContent className="flex flex-col items-center gap-8 p-8">
-              <ScoreRing score={snapshot.health} label="Repository health" />
-              <div className="grid w-full grid-cols-2 gap-x-6 gap-y-4 border-t border-[hsl(var(--border))] pt-6 text-center">
-                <div>
-                  <p className="text-lg font-semibold tabular-nums text-[hsl(var(--success))]">
-                    {snapshot.issuesResolved}
-                  </p>
-                  <p className="text-xs text-[hsl(var(--muted-foreground))]">Resolved</p>
-                </div>
-                <div>
-                  <p className="text-lg font-semibold tabular-nums text-[hsl(var(--high))]">
-                    {snapshot.issuesIntroduced}
-                  </p>
-                  <p className="text-xs text-[hsl(var(--muted-foreground))]">Introduced</p>
-                </div>
+            <CardContent className="flex flex-col items-center gap-6 p-8">
+              <ScoreRing score={snapshot.health} label="Health" />
+              <div className="w-full text-center">
+                <p className="text-xs text-[hsl(var(--muted-foreground))]">Current risk</p>
+                <Badge variant={SEV[risk.level]} className="mt-2">
+                  {risk.level.toUpperCase()}
+                </Badge>
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Score breakdown</CardTitle>
+              <CardTitle>Dimensions</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-6 sm:grid-cols-2">
+            <CardContent className="grid gap-5 sm:grid-cols-2">
               <ScoreBar label="Security" score={snapshot.security} />
               <ScoreBar label="Reliability" score={snapshot.reliability} />
-              <ScoreBar label="Code quality" score={snapshot.quality} />
               <ScoreBar label="Testing" score={snapshot.testing} />
-              <ScoreBar label="Performance" score={snapshot.performance} />
+              <ScoreBar label="Quality" score={snapshot.quality} />
             </CardContent>
           </Card>
         </div>
       )}
 
+      {top ? (
+        <Card className="mt-6">
+          <CardContent className="p-6">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+              Highest-priority finding
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-semibold">{top.title}</h2>
+              <Badge variant={SEV[top.severity]}>{top.severity}</Badge>
+            </div>
+            {top.filePath ? (
+              <p className="mt-1 font-mono text-sm text-[hsl(var(--muted-foreground))]">
+                {top.filePath}
+                {top.lineStart ? `:${top.lineStart}` : ''}
+              </p>
+            ) : null}
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">
+              {top.whyItMatters ?? top.description}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-4 text-sm">
+              <Link href={`/analysis`} className="text-[hsl(var(--primary))] underline-offset-4 hover:underline">
+                View findings
+              </Link>
+              <Link href={`/fixes?finding=${top.id}`} className="text-[hsl(var(--primary))] underline-offset-4 hover:underline">
+                Review a fix
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent findings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {findings.length === 0 ? (
+              <p className="py-6 text-center text-sm text-[hsl(var(--muted-foreground))]">
+                {snapshot ? 'Your latest scan found no open issues.' : 'Run a scan to populate findings.'}
+              </p>
+            ) : (
+              <ul className="divide-y divide-[hsl(var(--border))]">
+                {findings.map((finding) => (
+                  <li key={finding.id} className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{finding.title}</p>
+                      <p className="truncate font-mono text-xs text-[hsl(var(--muted-foreground))]">
+                        {finding.filePath ?? finding.ruleId}
+                      </p>
+                    </div>
+                    <Badge variant={SEV[finding.severity]}>{finding.severity}</Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Recent scans</CardTitle>
@@ -114,48 +179,19 @@ export default async function OverviewPage() {
                   <li key={scan.id} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium capitalize">{scan.trigger} scan</p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                        {scan.commitSha ? `${scan.commitSha.slice(0, 7)} · ` : ''}
-                        {timeAgo(scan.createdAt)}
-                      </p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">{timeAgo(scan.createdAt)}</p>
                     </div>
-                    <Badge variant={scan.status === 'completed' ? 'success' : scan.status === 'failed' ? 'critical' : 'outline'}>
+                    <Badge
+                      variant={
+                        scan.status === 'completed' ? 'success' : scan.status === 'failed' ? 'critical' : 'outline'
+                      }
+                    >
                       {scan.status}
                     </Badge>
                   </li>
                 ))}
               </ul>
             )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Guardian status</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-start gap-3">
-              <Activity className="mt-0.5 size-4 text-[hsl(var(--muted-foreground))]" aria-hidden="true" />
-              <div>
-                <p className="text-sm">
-                  {repo.guardianEnabled
-                    ? 'Guardian is watching pushes and pull requests.'
-                    : 'Guardian automation is not enabled for this repository.'}
-                </p>
-                <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
-                  Configure webhooks, policies and thresholds in Guardian.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 border-t border-[hsl(var(--border))] pt-4">
-              <GitCommitHorizontal className="mt-0.5 size-4 text-[hsl(var(--muted-foreground))]" aria-hidden="true" />
-              <div>
-                <p className="text-sm">Last scan {timeAgo(repo.lastScanAt)}</p>
-                <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
-                  Default branch: <span className="font-mono">{repo.defaultBranch}</span>
-                </p>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>

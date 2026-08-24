@@ -54,7 +54,7 @@ export default async function AnalysisPage() {
         <EmptyState
           icon={ShieldAlert}
           title="No open findings"
-          description="Run a scan. This list only shows issues the scanners actually produced."
+          description="Your latest scan found no open issues. Run another scan after you change code."
         />
       ) : (
         <div className="space-y-6">
@@ -69,15 +69,51 @@ export default async function AnalysisPage() {
                   </span>
                 </div>
                 <ul className="mt-4 divide-y divide-[hsl(var(--border))]">
-                  {group.findings.map((finding) => (
-                    <li key={finding.id} className="py-3">
-                      <p className="text-sm font-medium">{finding.title}</p>
-                      <p className="mt-0.5 font-mono text-xs text-[hsl(var(--muted-foreground))]">
-                        {finding.ruleId}
-                        {finding.filePath ? ` · ${finding.filePath}` : ''}
-                      </p>
-                    </li>
-                  ))}
+                  {group.findings.map((finding) => {
+                    const full = findings.find((f) => f.id === finding.id);
+                    return (
+                      <li key={finding.id} className="py-4">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium">{finding.title}</p>
+                          <Badge variant={VARIANT[finding.severity]}>{finding.severity}</Badge>
+                        </div>
+                        <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                          <div>
+                            <dt className="text-xs text-[hsl(var(--muted-foreground))]">Where</dt>
+                            <dd className="font-mono text-xs">
+                              {finding.filePath ?? 'repository-wide'}
+                              {full?.lineStart ? `:${full.lineStart}` : ''}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="text-xs text-[hsl(var(--muted-foreground))]">Confidence</dt>
+                            <dd>{full ? `${Math.round(full.confidence * 100)}%` : '—'}</dd>
+                          </div>
+                        </dl>
+                        {full?.description ? (
+                          <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">{full.description}</p>
+                        ) : null}
+                        {full?.whyItMatters ? (
+                          <p className="mt-2 text-sm">
+                            <span className="font-medium">Why it matters. </span>
+                            {full.whyItMatters}
+                          </p>
+                        ) : null}
+                        {full?.remediation ? (
+                          <p className="mt-2 text-sm">
+                            <span className="font-medium">How to fix. </span>
+                            {full.remediation}
+                          </p>
+                        ) : null}
+                        <a
+                          href={`/fixes?finding=${finding.id}`}
+                          className="mt-3 inline-block text-sm text-[hsl(var(--primary))] underline-offset-4 hover:underline"
+                        >
+                          Review a suggested fix
+                        </a>
+                      </li>
+                    );
+                  })}
                 </ul>
               </CardContent>
             </Card>

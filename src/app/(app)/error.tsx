@@ -2,13 +2,10 @@
 
 import * as React from 'react';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
-/**
- * Route error boundary. Shows a recoverable message instead of a blank screen,
- * and never leaks internal stack details to the user in production.
- */
 export default function ErrorBoundary({
   error,
   reset,
@@ -20,32 +17,32 @@ export default function ErrorBoundary({
     console.error('[codesentinel] route error', error);
   }, [error]);
 
-  const isDev = process.env.NODE_ENV === 'development';
-
   return (
     <Card className="mx-auto max-w-lg">
-      <div className="space-y-5 p-8 text-center">
+      <div className="space-y-5 p-8">
         <div className="mx-auto flex size-11 items-center justify-center rounded-full bg-[hsl(var(--critical))]/10">
           <AlertTriangle className="size-5 text-[hsl(var(--critical))]" aria-hidden="true" />
         </div>
-        <div className="space-y-2">
-          <h2 className="text-base font-semibold">Something went wrong</h2>
+        <div className="space-y-2 text-center">
+          <h2 className="text-base font-semibold">This page could not be loaded</h2>
           <p className="text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">
-            This page could not be rendered. The error has been logged.
+            A request failed. Your repository data was not modified. You can retry, or return to Overview.
           </p>
-          {isDev ? (
-            <pre className="mt-3 overflow-x-auto rounded-lg bg-[hsl(var(--muted))] p-3 text-left font-mono text-[11px] leading-relaxed">
-              {error.message}
-            </pre>
-          ) : null}
-          {error.digest ? (
-            <p className="font-mono text-[11px] text-[hsl(var(--muted-foreground))]">digest: {error.digest}</p>
-          ) : null}
         </div>
-        <Button onClick={reset} variant="outline">
-          <RotateCcw className="size-4" />
-          Try again
-        </Button>
+        <details className="rounded-lg border border-[hsl(var(--border))] px-4 py-3 text-left text-xs text-[hsl(var(--muted-foreground))]">
+          <summary className="cursor-pointer font-medium text-[hsl(var(--foreground))]">Technical details</summary>
+          <p className="mt-2 font-mono">{error.message || 'Unknown error'}</p>
+          {error.digest ? <p className="mt-1 font-mono">digest: {error.digest}</p> : null}
+        </details>
+        <div className="flex justify-center gap-3">
+          <Button onClick={reset} variant="outline">
+            <RotateCcw className="size-4" />
+            Retry
+          </Button>
+          <Button asChild>
+            <Link href="/">Overview</Link>
+          </Button>
+        </div>
       </div>
     </Card>
   );

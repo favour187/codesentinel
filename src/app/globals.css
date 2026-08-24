@@ -138,6 +138,28 @@
 }
 
 @layer utilities {
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .sr-only:focus,
+  .focus\:not-sr-only:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: inherit;
+  }
+
   .bg-background { background-color: hsl(var(--background)); }
   .bg-surface { background-color: hsl(var(--surface)); }
   .bg-surface-raised { background-color: hsl(var(--surface-raised)); }
