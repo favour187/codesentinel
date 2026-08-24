@@ -17,15 +17,14 @@ const bool = (v: string | undefined, fallback = false): boolean => {
 
 /** Strip BOM, paired quotes, Bearer prefix, and invisible characters. Never log the result. */
 export function sanitizeSecret(raw: string): string {
-  let value = raw.replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '');
-  value = value.trim().replace(/^bearer\s+/i, '').trim();
+  let value = raw.replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
   if (
     (value.startsWith('"') && value.endsWith('"') && value.length >= 2) ||
     (value.startsWith("'") && value.endsWith("'") && value.length >= 2)
   ) {
     value = value.slice(1, -1).trim();
   }
-  return value;
+  return value.replace(/^bearer\s+/i, '').trim();
 }
 
 const secret = z.string().optional().default('').transform((v) => sanitizeSecret(v));
@@ -62,7 +61,8 @@ const EnvSchema = z.object({
   FEATHERLESS_BASE_URL: z.string().url().default('https://api.featherless.ai/v1'),
 
   GROQ_API_KEY: secret,
-  GROQ_MODEL: z.string().default('llama-3.1-8b-instant'),
+  // Free/developer Groq keys cannot use Enterprise Llama IDs.
+  GROQ_MODEL: z.string().default('openai/gpt-oss-20b'),
   GROQ_BASE_URL: z.string().url().default('https://api.groq.com/openai/v1'),
 
   /** Hard ceiling on characters of repository evidence sent in one prompt. */

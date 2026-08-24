@@ -32,9 +32,41 @@ interface ChatResponse {
 const numberOrNull = (value: unknown): number | null =>
   typeof value === 'number' && Number.isFinite(value) ? value : null;
 
+const SKIP_MODEL = /whisper|tts|guard|orpheus|compound/i;
+
+async function pickAccessibleChatModel(
+  fetchImpl: typeof fetch,
+  baseUrl: string,
+  headers: Record<string, string>,
+  signal: AbortSignal,
+): Promise<string | null> {
+  try {
+    const response = await fetchImpl(`${baseUrl.replace(/\/$/, '')}/models`, {
+      headers,
+      cache: 'no-store',
+      signal,
+    });
+    if (!response.ok) return null;
+    const payload = (await response.json()) as { data?: Array<{ id?: string }> };
+    const ids = (payload.data ?? []).map((m) => m.id).filter((id): id is string => Boolean(id));
+    const preferred = [
+      'openai/gpt-oss-20b',
+      'openai/gpt-oss-120b',
+      'llama-3.3-70b-versatile',
+      'llama-3.1-8b-instant',
+    ];
+    for (const id of preferred) {
+      if (ids.includes(id)) return id;
+    }
+    return ids.find((id) => !SKIP_MODEL.test(id)) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export class OpenAICompatibleProvider implements AIProvider {
   readonly id: string;
-  readonly model: string;
+  model: string;
   private readonly config: OpenAICompatibleConfig;
 
   constructor(config: OpenAICompatibleConfig) {
@@ -55,29 +87,26 @@ export class OpenAICompatibleProvider implements AIProvider {
     const fetchImpl = this.config.fetchImpl ?? fetch;
     const started = Date.now();
 
-    /*
-     * Two abort sources: our own timeout and the caller's signal (e.g. the
-     * user navigated away). Without the timeout a hung provider would hold a
-     * request open until the platform kills it.
-     */
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.config.timeoutMs);
     const onAbort = () => controller.abort();
     request.signal?.addEventListener('abort', onAbort, { once: true });
 
     try {
+      const authHeaders = {
+        Authorization: `Bearer ${this.config.apiKey.trim()}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'User-Agent': 'CodeSentinel',
+      };
+
       const post = async (useJson: boolean, tokenField: 'max_tokens' | 'max_completion_tokens') => {
         return fetchImpl(`${this.config.baseUrl.replace(/\/$/, '')}/chat/completions`, {
           method: 'POST',
-          headers: {
-            Authorization: `Bearer ${this.config.apiKey.trim()}`,
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-            'User-Agent': 'CodeSentinel',
-          },
+          headers: authHeaders,
           cache: 'no-store',
           body: JSON.stringify({
-            model: this.config.model,
+            model: this.model,
             messages: request.messages.map((m) => ({ role: m.role, content: m.content })),
             temperature: request.temperature ?? 0.1,
             [tokenField]: request.maxTokens ?? 1200,
@@ -91,6 +120,20 @@ export class OpenAICompatibleProvider implements AIProvider {
       let tokenField: 'max_tokens' | 'max_completion_tokens' = 'max_tokens';
       let response = await post(useJson, tokenField);
       let raw = await response.text();
+
+      if (!response.ok && response.status === 404) {
+        const fallback = await pickAccessibleChatModel(
+          fetchImpl,
+          this.config.baseUrl,
+          authHeaders,
+          controller.signal,
+        );
+        if (fallback && fallback !== this.model) {
+          this.model = fallback;
+          response = await post(useJson, tokenField);
+          raw = await response.text();
+        }
+      }
 
       if (!response.ok && response.status === 400) {
         const hint = `${extractError(raw)} ${raw}`.toLowerCase();
@@ -106,11 +149,6 @@ export class OpenAICompatibleProvider implements AIProvider {
       }
 
       if (!response.ok) {
-        /*
-         * 4xx other than 408/429 means the request itself is wrong (bad key,
-         * unknown model, oversized prompt). Retrying the SAME provider is
-         * pointless, but the router should still fall through to the next one.
-         */
         const permanent = response.status >= 400 && response.status < 500 && ![408, 429].includes(response.status);
         throw new AIProviderError(
           this.id,
@@ -134,7 +172,7 @@ export class OpenAICompatibleProvider implements AIProvider {
 
       return {
         text: content,
-        model: this.config.model,
+        model: this.model,
         provider: this.id,
         promptTokens: numberOrNull(parsed.usage?.prompt_tokens),
         completionTokens: numberOrNull(parsed.usage?.completion_tokens),
@@ -153,14 +191,13 @@ export class OpenAICompatibleProvider implements AIProvider {
   }
 }
 
-/** Pull a useful message out of an error body without assuming its shape. */
 function extractError(raw: string): string {
   try {
     const parsed = JSON.parse(raw) as ChatResponse;
     const message = parsed.error?.message;
     if (typeof message === 'string') return message;
   } catch {
-    /* fall through to the raw body */
+    /* fall through */
   }
   return raw || 'no response body';
 }

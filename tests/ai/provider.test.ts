@@ -87,6 +87,33 @@ describe('OpenAICompatibleProvider', () => {
     expect(result.completionTokens).toBeNull();
   });
 
+  it('falls back to a listed chat model when the configured id is 404', async () => {
+    let completions = 0;
+    const sequential = vi.fn(async (url: string) => {
+      if (String(url).endsWith('/models')) {
+        return new Response(JSON.stringify({ data: [{ id: 'openai/gpt-oss-20b' }] }), { status: 200 });
+      }
+      completions += 1;
+      if (completions === 1) {
+        return new Response(JSON.stringify({ error: { message: 'does not exist' } }), { status: 404 });
+      }
+      return chatResponse('{"ok":true}');
+    }) as unknown as typeof fetch;
+
+    const provider = new OpenAICompatibleProvider({
+      id: 'test-provider',
+      apiKey: 'test-key',
+      model: 'missing-model',
+      baseUrl: 'https://example.test/v1',
+      timeoutMs: 5000,
+      fetchImpl: sequential,
+    });
+
+    const result = await provider.complete({ messages: [{ role: 'user', content: 'q' }] });
+    expect(result.text).toBe('{"ok":true}');
+    expect(provider.model).toBe('openai/gpt-oss-20b');
+  });
+
   it('marks a 401 as non-retryable so the router falls through instead of retrying', async () => {
     const fetchImpl = vi.fn(
       async () => new Response(JSON.stringify({ error: { message: 'bad key' } }), { status: 401 }),
