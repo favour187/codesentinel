@@ -201,6 +201,78 @@ If you have teammates, add a row each with **specific** files or features they o
 
 ---
 
+## Devpost story fields (Inspiration and others)
+
+These are the extra boxes Devpost usually shows under the project story. Paste as-is.
+
+### Inspiration
+
+I was tired of two bad options after every pull request: stare at a diff and hope, or paste the repo into a chatbot and hope it does not hallucinate a vulnerability.
+
+The inspiration was the gap between **writing** code (which copilots already do) and **guarding** a repository (which they do not). A one-line auth change can reach routes, data, and untested helpers. Generic AI has no continuous view of that surface, and it will invent findings to sound helpful. That is the opposite of what a security-minded reviewer needs.
+
+Proof of Possible’s line — *Don’t pitch the future. Build evidence.* — matched the product we wanted: judges should click **Explore Demo**, run a real scan, and see issues that exist in real files. Not a slide that says “AI-powered SAST.”
+
+Sponsors and tools we already planned to use (Render for a live host, Groq/Featherless for optional explanation) made it possible to ship something testable instead of a mock.
+
+### What it does
+
+CodeSentinel is an autonomous **code guardian** for a GitHub repository (or a bundled demo fixture).
+
+- Connects via GitHub OAuth, or starts instantly with **Explore Demo**.
+- Runs eight deterministic scanners on the actual checkout: secrets, security, dependencies, quality, testing, infrastructure, CI/CD, config.
+- Builds a digital twin: files, symbols, imports, components, routes, test-gap edges.
+- Shows health and risk that come from those findings — not from a language model.
+- Optionally asks Groq or Featherless to **explain** a finding using packed evidence. If AI fails, the scan still stands.
+- Fix Center proposes a diff and tests. Apply / create PR stays off unless write access exists.
+- Guardian can verify webhooks and report on PRs. It never silent-edits the repo.
+- Secrets are fingerprinted and masked. Demo data cannot be mixed with a real repo.
+
+### How we built it
+
+- **Next.js 15 App Router + TypeScript + Tailwind** for the nine-page dashboard and marketing landing.
+- **Drizzle + PostgreSQL** on Render (PGlite only for local/tests so SQL stays real).
+- **Scanners** walk files on disk after a GitHub tarball checkout or the fixture path. No fake result tables.
+- **Twin / indexer** parses TypeScript and other sources into symbols and edges (`imports`, `exposes_api`, `uses_database`, `tests`).
+- **Auth:** signed httpOnly session cookies (jose); OAuth `state` checked in constant time; tokens encrypted at rest.
+- **AI router:** Groq first, Featherless fallback; JSON schema validation; redaction; model 404 → pick a model the key can actually call.
+- **Deploy:** `render.yaml`, standalone Node server, heap cap for 512 MB, `/api/health`.
+- **Honesty layer:** `?judge=1` bar, demo reset that refuses GitHub repos, disabled apply buttons that say why.
+
+### Challenges we ran into
+
+- **Render free tier (512 MB):** Next.js typecheck and `tsx` migrate OOMed. We skipped typecheck on Render, capped the heap, and apply schema on first request.
+- **405 / blank preview:** POST-only auth routes and `X-Frame-Options: SAMEORIGIN` broke iframe hosts. GET aliases and no SAMEORIGIN.
+- **GitHub “Run scan” did nothing:** jobs queued with no commit SHA and required a GitHub App. Manual scan now downloads the tarball with the user’s token and runs inline.
+- **“AI configured” but 401/404:** keys were present but quoted, or Llama IDs were Enterprise-only. We strip secrets, probe `/models`, and default to `openai/gpt-oss-20b`.
+- **Codebase noise:** scanning this repo included `fixtures/demo-repo`, so the map showed bait APIs and `(unknown)` DB targets. We hide fixture/test trees from the product map.
+- **Staying honest:** every time it was tempting to hard-code a pretty scan, we refused. That made the demo harder and the evidence stronger.
+
+### Accomplishments that we're proud of
+
+- A **live** judge path with no login: Demo → scan → real findings in under two minutes.
+- Scanners and twin work **without any LLM**.
+- AI that degrades in public instead of lying.
+- 800+ automated tests and a production deploy on Render.
+- Security defaults: masked secrets, encrypted tokens, HMAC webhooks, no auto-merge.
+
+### What we learned
+
+- “AI-powered” is not a feature. Grounding and failure modes are.
+- Free-tier hosting is part of the product: memory, cold start, and env vars will break a demo if you ignore them.
+- Static analysis without a twin only lists files; blast radius needs a graph.
+- Judges and users need an honest empty state more than a fake green check.
+
+### What's next for CodeSentinel
+
+- A dedicated scan worker so large repos do not share the web dyno.
+- Optional, explicit GitHub App write path to open a PR the human still approves.
+- Ingested coverage reports (today test gaps are import-based, not line coverage).
+- Richer policy UI and notification sinks.
+- Keep the rule: AI explains; it never authors findings.
+
+---
+
 ## Short “About” blurb (if Devpost has one box)
 
 CodeSentinel is a GitHub-connected code guardian. It scans real files, builds a digital twin for blast radius and test gaps, and optionally uses an LLM only to explain evidence it already has. Fixes are diffs. Nothing is applied without approval. Judges can prove it in two minutes: https://codesentinel-3yg4.onrender.com/?judge=1 → Explore Demo → Run scan.
