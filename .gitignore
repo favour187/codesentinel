@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js
+.next/
+out/
+build/
+dist/
+next-env.d.ts
+
+# Production data / local database
+.data/
+*.sqlite
+*.db
+
+# ---------------------------------------------------------------------------
+# SECRETS — never commit credentials.
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*private-key*.pem
+github-app-*.pem
+secrets.json
+credentials.json
+.netrc
+.git-credentials
+
+# Testing
+coverage/
+.vitest/
+
+# Misc
+.DS_Store
+*.pem
+.vercel
+.turbo
+*.tsbuildinfo
+.idea/
+.vscode/*
+!.vscode/extensions.json
+npm-debug.log*
+yarn-error.log*
