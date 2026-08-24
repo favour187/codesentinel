@@ -32,18 +32,22 @@ export function isOAuthConfigured(): boolean {
   return getFeatures().githubOAuth;
 }
 
-export function buildAuthorizeUrl(redirectPath = '/'): OAuthStart {
+export function oauthCallbackUrl(publicOrigin: string): string {
+  return `${publicOrigin.replace(/\/$/, '')}/api/auth/github/callback`;
+}
+
+export function buildAuthorizeUrl(redirectPath = '/', publicOrigin?: string): OAuthStart {
   const env = getEnv();
   if (!isOAuthConfigured()) {
     throw new Error('GitHub OAuth is not configured (GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET).');
   }
   // state = random nonce + where to return the user afterwards
+  const origin = (publicOrigin ?? env.APP_URL).replace(/\/$/, '');
   const nonce = randomToken(24);
-  const state = `${nonce}.${Buffer.from(redirectPath).toString('base64url')}`;
-
+  const state = `${nonce}.${Buffer.from(redirectPath).toString('base64url')}.${Buffer.from(origin).toString('base64url')}`;
   const url = new URL(GITHUB_AUTHORIZE_URL);
   url.searchParams.set('client_id', env.GITHUB_CLIENT_ID);
-  url.searchParams.set('redirect_uri', `${env.APP_URL}/api/auth/github/callback`);
+  url.searchParams.set('redirect_uri', oauthCallbackUrl(origin));
   url.searchParams.set('scope', OAUTH_SCOPES.join(' '));
   url.searchParams.set('state', state);
   url.searchParams.set('allow_signup', 'true');
@@ -68,13 +72,26 @@ export function redirectPathFromState(state: string): string {
   }
 }
 
+/** Public origin baked into `state` so token exchange uses the same callback URL. */
+export function originFromState(state: string): string {
+  const encoded = state.split('.')[2];
+  if (!encoded) return getEnv().APP_URL.replace(/\/$/, '');
+  try {
+    const origin = Buffer.from(encoded, 'base64url').toString('utf8');
+    if (origin.startsWith('http://') || origin.startsWith('https://')) return origin.replace(/\/$/, '');
+  } catch {
+    /* fall through */
+  }
+  return getEnv().APP_URL.replace(/\/$/, '');
+}
+
 export interface TokenResponse {
   accessToken: string;
   scope: string;
   tokenType: string;
 }
 
-export async function exchangeCodeForToken(code: string): Promise<TokenResponse> {
+export async function exchangeCodeForToken(code: string, publicOrigin?: string): Promise<TokenResponse> {
   const env = getEnv();
   const res = await fetch(GITHUB_TOKEN_URL, {
     method: 'POST',
@@ -83,7 +100,7 @@ export async function exchangeCodeForToken(code: string): Promise<TokenResponse>
       client_id: env.GITHUB_CLIENT_ID,
       client_secret: env.GITHUB_CLIENT_SECRET,
       code,
-      redirect_uri: `${env.APP_URL}/api/auth/github/callback`,
+      redirect_uri: oauthCallbackUrl(publicOrigin ?? env.APP_URL),
     }),
   });
 

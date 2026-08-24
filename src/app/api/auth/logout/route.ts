@@ -5,6 +5,10 @@ import { redirectTo } from '@/lib/http';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export function GET(request: NextRequest): NextResponse {
+  return POST(request);
+}
+
 export function POST(request: NextRequest): NextResponse {
   const response = redirectTo(request, '/login');
   response.cookies.set(SESSION_COOKIE, '', sessionCookieOptions(0));

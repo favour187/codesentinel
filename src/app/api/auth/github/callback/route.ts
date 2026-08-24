@@ -5,6 +5,7 @@ import {
   fetchGitHubUser,
   isOAuthConfigured,
   OAUTH_STATE_COOKIE,
+  originFromState,
   redirectPathFromState,
   verifyState,
 } from '@/lib/auth/oauth';
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const token = await exchangeCodeForToken(code);
+    const token = await exchangeCodeForToken(code, originFromState(state));
     const ghUser = await fetchGitHubUser(token.accessToken);
 
     const database = await db();

@@ -6,6 +6,7 @@ import { Loader2, PlayCircle, AlertCircle } from 'lucide-react';
 import { GitHubIcon } from '@/components/ui/icons';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { GitHubRepoPicker } from '@/components/dashboard/github-repo-picker';
 
 interface ConnectRepositoryProps {
   githubConnected: boolean;
@@ -61,17 +62,15 @@ export function ConnectRepository({ githubConnected, demoAvailable }: ConnectRep
 
         <div className="space-y-3">
           {githubConnected ? (
-            <Button asChild size="lg" className="w-full justify-start">
-              <a href="/settings#repositories">
-                <GitHubIcon className="size-4" />
-                Choose a GitHub repository
-              </a>
-            </Button>
+            <div className="rounded-lg border border-[hsl(var(--border))] p-4">
+              <p className="mb-3 text-sm font-medium">Your GitHub repositories</p>
+              <GitHubRepoPicker />
+            </div>
           ) : (
             <Button asChild size="lg" variant="outline" className="w-full justify-start">
-              <a href="/api/auth/github?redirect=/settings">
+              <a href="/api/auth/github?redirect=/">
                 <GitHubIcon className="size-4" />
-                Connect your GitHub account
+                Sign in with GitHub
               </a>
             </Button>
           )}

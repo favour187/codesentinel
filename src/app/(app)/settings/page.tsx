@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
+import { GitHubRepoPicker } from '@/components/dashboard/github-repo-picker';
 import { getCurrentUser } from '@/lib/auth/current-user';
 import { listRepositoriesForUser } from '@/lib/repositories';
 import { getFeatures } from '@/lib/env';
@@ -129,11 +130,21 @@ export default async function SettingsPage() {
             <CardDescription>Repositories CodeSentinel is allowed to analyse.</CardDescription>
           </CardHeader>
           <CardContent>
+            {!user.isDemo && features.githubOAuth ? (
+              <div className="mb-8">
+                <p className="mb-3 text-sm font-medium">Add from GitHub</p>
+                <GitHubRepoPicker />
+              </div>
+            ) : null}
             {repos.length === 0 ? (
               <EmptyState
                 icon={FolderGit2}
                 title="No repositories connected"
-                description="Connect a repository from the Overview page to start analysing real code."
+                description={
+                  user.isDemo
+                    ? 'You are in the demo workspace. Sign out and Connect GitHub to add a real repository.'
+                    : 'Sign in with GitHub, then connect a repository from the list above.'
+                }
               />
             ) : (
               <ul className="divide-y divide-[hsl(var(--border))]">

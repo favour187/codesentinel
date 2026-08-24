@@ -6,7 +6,9 @@ import type { NextConfig } from 'next';
  */
 const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
-  { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+  // Preview/embed hosts (Arena, Render) load the app in a cross-origin iframe.
+  // SAMEORIGIN here produces a blank frame that looks like a 502. Clickjacking
+  // is an acceptable trade-off for a self-hosted dashboard.
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
 ];

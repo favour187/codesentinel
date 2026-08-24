@@ -17,6 +17,11 @@ const log = createLogger('api:auth:demo');
  * intentionally-vulnerable fixture that CodeSentinel scans for real. It never
  * touches a third-party GitHub repository.
  */
+/** GET is accepted so a bookmark or prefetch does not return 405. */
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  return POST(request);
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const demoUser = await getOrCreateDemoUser();

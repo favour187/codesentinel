@@ -288,6 +288,23 @@ export class GitHubClient {
     }
   }
 
+  /** Repositories the signed-in user can access (OAuth token). */
+  async listUserRepositories(): Promise<
+    Array<{
+      id: number;
+      name: string;
+      full_name: string;
+      owner: { login: string };
+      default_branch: string;
+      private: boolean;
+      description: string | null;
+      language: string | null;
+      html_url: string;
+    }>
+  > {
+    return this.request('GET', '/user/repos?per_page=50&sort=updated&affiliation=owner,collaborator');
+  }
+
   /** Repositories visible to the current installation. */
   async listInstallationRepositories(): Promise<Array<{ id: number; full_name: string; default_branch: string }>> {
     const payload = await this.request<{

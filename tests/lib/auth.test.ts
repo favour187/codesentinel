@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createSessionToken, verifySessionToken } from '@/lib/auth/session';
-import { buildAuthorizeUrl, verifyState, redirectPathFromState, isOAuthConfigured } from '@/lib/auth/oauth';
+import { buildAuthorizeUrl, verifyState, redirectPathFromState, originFromState, isOAuthConfigured } from '@/lib/auth/oauth';
 import { resetEnvCache } from '@/lib/env';
 
 describe('session tokens', () => {
@@ -65,6 +65,14 @@ describe('oauth authorize flow', () => {
     expect(parsed.searchParams.get('client_id')).toBe('Iv1.testclientid');
     expect(parsed.searchParams.get('state')).toBeTruthy();
     expect(parsed.searchParams.get('redirect_uri')).toContain('/api/auth/github/callback');
+  });
+
+  it('uses the request origin for the callback so preview hosts work', () => {
+    const { url, state } = buildAuthorizeUrl('/', 'https://preview.example');
+    expect(new URL(url).searchParams.get('redirect_uri')).toBe(
+      'https://preview.example/api/auth/github/callback',
+    );
+    expect(originFromState(state)).toBe('https://preview.example');
   });
 
   it('round-trips a redirect path through the state parameter', () => {
