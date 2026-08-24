@@ -208,6 +208,69 @@ async function save(row) {
     expect(parsed.path).toBe('src/broken.ts');
     expect(Array.isArray(parsed.symbols)).toBe(true);
   });
+
+  /**
+   * CommonJS exports its declarations at the bottom of the file rather than on
+   * the declaration itself. Reading only the `export` keyword marked every
+   * symbol in a CJS repository private, which silently emptied every feature
+   * that filters on the public surface.
+   */
+  describe('CommonJS exports', () => {
+    const cjs = [
+      'function createSession(userId) { return { userId }; }',
+      'function destroySession(id) { return id; }',
+      'function internalHash(v) { return v; }',
+      'class SessionStore {}',
+      '',
+      'module.exports = { createSession, destroySession, SessionStore };',
+    ].join('\n');
+
+    const parsed = parseFile('src/auth/session.js', cjs, 'javascript');
+    const byName = new Map(parsed.symbols.map((s) => [s.name, s]));
+
+    it('marks functions listed in module.exports as exported', () => {
+      expect(byName.get('createSession')?.isExported).toBe(true);
+      expect(byName.get('destroySession')?.isExported).toBe(true);
+    });
+
+    it('marks an exported class', () => {
+      expect(byName.get('SessionStore')?.isExported).toBe(true);
+    });
+
+    it('leaves a symbol absent from module.exports private', () => {
+      expect(byName.get('internalHash')?.isExported).toBe(false);
+    });
+
+    it('still records the file-level export list', () => {
+      expect([...parsed.exports].sort()).toEqual(['SessionStore', 'createSession', 'destroySession']);
+    });
+
+    it('handles module.exports.name = fn assignment', () => {
+      const single = parseFile('src/x.js', 'function go() {}\nmodule.exports.go = go;\n', 'javascript');
+      expect(single.symbols.find((s) => s.name === 'go')?.isExported).toBe(true);
+    });
+
+    it('does not mark a nested member sharing an exported name', () => {
+      const nested = parseFile(
+        'src/y.js',
+        ['class A { createSession() {} }', 'function createSession() {}', 'module.exports = { createSession };'].join(
+          '\n',
+        ),
+        'javascript',
+      );
+      const method = nested.symbols.find((s) => s.kind === 'method' && s.name === 'createSession');
+      const fn = nested.symbols.find((s) => s.kind === 'function' && s.name === 'createSession');
+
+      expect(method?.isExported).toBe(false);
+      expect(fn?.isExported).toBe(true);
+    });
+
+    it('leaves ESM behaviour unchanged', () => {
+      const esm = parseFile('src/z.ts', 'export function a() {}\nfunction b() {}\n', 'typescript');
+      expect(esm.symbols.find((s) => s.name === 'a')?.isExported).toBe(true);
+      expect(esm.symbols.find((s) => s.name === 'b')?.isExported).toBe(false);
+    });
+  });
 });
 
 describe('python parser', () => {

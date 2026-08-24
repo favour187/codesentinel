@@ -25,6 +25,29 @@ import { isExternalSpecifier, packageNameOf, resolveSpecifier } from './resolve'
  *    which is why CALLS edges are fewer than call sites.
  */
 
+/**
+ * Cache generation for the parser layer.
+ *
+ * `index_state` keys a file's cached result by content hash, which correctly
+ * skips reparsing a file that has not changed. It does NOT notice when the
+ * *parser* changed: after a parser fix, every unchanged file keeps its stale
+ * symbols and edges forever, and the improvement never reaches an existing
+ * repository. Bumping this constant invalidates every cached entry exactly
+ * once, so a parser upgrade takes effect on the next scan.
+ *
+ * Bump this whenever a parser change alters the symbols, edges, routes or
+ * database uses extracted from unchanged source.
+ *
+ * v2 — CommonJS `module.exports = { ... }` now marks the referenced
+ *      declarations as exported.
+ */
+export const INDEXER_VERSION = 2;
+
+/** The stored hash for a file: content plus the parser generation. */
+export function cacheKeyFor(contentHash: string): string {
+  return `v${INDEXER_VERSION}:${contentHash}`;
+}
+
 /** How a symbol is addressed in an edge endpoint: `path#name`. */
 export function symbolKey(filePath: string, symbolName: string): string {
   return `${filePath}#${symbolName}`;
@@ -98,7 +121,9 @@ export async function indexRepository(
   const removedPaths = [...previousHashes.keys()].filter((p) => !currentPaths.has(p));
 
   /* Files whose content changed (or everything, when forced). */
-  const changed = files.filter((f) => options.force || previousHashes.get(f.path) !== f.contentHash);
+  const changed = files.filter(
+    (f) => options.force || previousHashes.get(f.path) !== cacheKeyFor(f.contentHash),
+  );
   const unchangedCount = files.length - changed.length;
 
   /*
@@ -220,7 +245,7 @@ export async function indexRepository(
         .values({
           repositoryId,
           filePath: file.path,
-          contentHash: file.contentHash,
+          contentHash: cacheKeyFor(file.contentHash),
           language: file.language,
           symbolCount: result?.symbols.length ?? 0,
           edgeCount,
@@ -230,7 +255,7 @@ export async function indexRepository(
         .onConflictDoUpdate({
           target: [indexState.repositoryId, indexState.filePath],
           set: {
-            contentHash: file.contentHash,
+            contentHash: cacheKeyFor(file.contentHash),
             language: file.language,
             symbolCount: result?.symbols.length ?? 0,
             edgeCount,

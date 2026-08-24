@@ -415,10 +415,28 @@ class TypeScriptParser implements LanguageParser {
 
     ts.forEachChild(sf, visit);
 
+    /*
+     * Back-fill `isExported` from the export list.
+     *
+     * ESM marks the declaration itself (`export function foo`), so the flag is
+     * set as the symbol is created. CommonJS does not: `function foo() {}` is
+     * an ordinary declaration and `module.exports = { foo }` at the bottom of
+     * the file is what exports it. Without this pass every symbol in a CJS
+     * codebase reads as private, which silently empties the test-gap engine
+     * and the public-API surface for any repository not yet on ESM.
+     */
+    const exportedNames = new Set(exports);
+    const resolvedSymbols =
+      exportedNames.size === 0
+        ? symbols
+        : symbols.map((s) =>
+            !s.isExported && s.parentName === null && exportedNames.has(s.name) ? { ...s, isExported: true } : s,
+          );
+
     return {
       path,
       language: jsx ? 'tsx' : 'typescript',
-      symbols,
+      symbols: resolvedSymbols,
       imports: dedupeImports(imports),
       exports: [...new Set(exports)],
       routes,

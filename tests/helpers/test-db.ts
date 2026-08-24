@@ -13,21 +13,39 @@ import { BOOTSTRAP_SQL, splitStatements } from '@/db/bootstrap';
 export type TestDb = ReturnType<typeof drizzle<typeof schema>>;
 
 /**
- * Every PGlite instance holds a WASM heap that is not reclaimed by GC. Left
- * open, a handful of per-test databases exhaust the worker and Vitest reports
- * "Worker exited unexpectedly" even though all assertions passed. The registry
- * lets the global afterEach hook in tests/setup.ts close them deterministically.
+ * One PGlite instance per worker process, reused by every test.
+ *
+ * Each instance holds a WASM heap that is never returned to the OS — closing
+ * the handle does not shrink RSS. Building a fresh database per test therefore
+ * grows memory monotonically until the kernel OOM-kills the worker, which
+ * Vitest reports as the misleading "Worker exited unexpectedly". Creating the
+ * database once and truncating between tests keeps the isolation that matters
+ * (no row survives a test) at a fixed memory cost, and is far faster: the
+ * bootstrap DDL runs once per process instead of once per test.
  */
-const openClients = new Set<PGlite>();
+let shared: TestDb | null = null;
+let sharedClient: PGlite | null = null;
+/** Tables to clear between tests, resolved once from the live schema. */
+let truncatable: string[] = [];
 
 export async function closeTestDbs(): Promise<void> {
-  await Promise.all([...openClients].map((c) => c.close().catch(() => undefined)));
-  openClients.clear();
+  // Between tests, wipe rows rather than tearing down the WASM instance.
+  if (!shared || truncatable.length === 0) return;
+  await shared.execute(sql.raw(`TRUNCATE TABLE ${truncatable.join(', ')} RESTART IDENTITY CASCADE`));
+}
+
+/** Drop the shared instance. Only for tests that need a genuinely empty database. */
+export async function destroyTestDb(): Promise<void> {
+  await sharedClient?.close().catch(() => undefined);
+  shared = null;
+  sharedClient = null;
+  truncatable = [];
 }
 
 export async function createTestDb(): Promise<TestDb> {
+  if (shared) return shared;
+
   const client = new PGlite();
-  openClients.add(client);
   const database = drizzle(client, { schema });
 
   // Reuse the production splitter rather than re-implementing it: a second
@@ -35,6 +53,16 @@ export async function createTestDb(): Promise<TestDb> {
   for (const statement of splitStatements(BOOTSTRAP_SQL)) {
     await database.execute(sql.raw(statement));
   }
+
+  // Ask the database what exists rather than hardcoding a list that would
+  // silently go stale the next time a table is added.
+  const rows = await database.execute<{ tablename: string }>(
+    sql.raw("SELECT tablename FROM pg_tables WHERE schemaname = 'public'"),
+  );
+  truncatable = (rows.rows ?? []).map((r) => `"${r.tablename}"`);
+
+  shared = database;
+  sharedClient = client;
   return database;
 }
 

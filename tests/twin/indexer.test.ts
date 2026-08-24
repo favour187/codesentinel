@@ -16,9 +16,8 @@ vi.mock('@/db', async (importOriginal) => {
   return { ...actual, getDb: async () => db };
 });
 
-const { indexRepository, buildFileEdges, symbolKey, packageKey, routeKey, databaseKey } = await import(
-  '@/twin/indexer'
-);
+const { indexRepository, buildFileEdges, symbolKey, packageKey, routeKey, databaseKey, INDEXER_VERSION } =
+  await import('@/twin/indexer');
 
 const FIXTURE_ROOT = path.join(process.cwd(), 'fixtures', 'demo-repo');
 
@@ -188,6 +187,36 @@ describe('incremental indexing', () => {
       .where(and(eq(symbolsTable.repositoryId, repositoryId), eq(symbolsTable.filePath, 'src/b.js')));
 
     expect(after.map((s) => s.id)).toEqual(before.map((s) => s.id));
+  });
+
+  /**
+   * Content hashing alone cannot tell that the *parser* improved. Without a
+   * generation stamp in the cache key, a parser fix never reaches files that
+   * did not themselves change — which is exactly how a CommonJS export fix
+   * came to have no visible effect on an already-indexed repository.
+   */
+  it('reparses everything when the indexer generation changes', async () => {
+    await indexRepository(repositoryId, base);
+
+    // Simulate rows written by a previous generation of the indexer.
+    await db
+      .update(indexState)
+      .set({ contentHash: 'v0:stale' })
+      .where(eq(indexState.repositoryId, repositoryId));
+
+    const result = await indexRepository(repositoryId, base);
+    expect(result.filesParsed).toBe(3);
+    expect(result.filesUnchanged).toBe(0);
+  });
+
+  it('stamps the cache key with the indexer generation', async () => {
+    await indexRepository(repositoryId, base);
+
+    const rows = await db.select().from(indexState).where(eq(indexState.repositoryId, repositoryId));
+    expect(rows.length).toBe(3);
+    for (const row of rows) {
+      expect(row.contentHash.startsWith(`v${INDEXER_VERSION}:`)).toBe(true);
+    }
   });
 
   it('invalidates the cache when a file is deleted', async () => {
