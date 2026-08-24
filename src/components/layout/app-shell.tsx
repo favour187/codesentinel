@@ -3,7 +3,9 @@ import { LogOut } from 'lucide-react';
 import { GitHubIcon } from '@/components/ui/icons';
 import { Sidebar, MobileNav } from './sidebar';
 import { ThemeToggle } from './theme-toggle';
+import { JudgeBar } from './judge-bar';
 import { Button } from '@/components/ui/button';
+import { Suspense } from 'react';
 import type { CurrentUser } from '@/lib/auth/current-user';
 
 interface AppShellProps {
@@ -63,6 +65,10 @@ export function AppShell({ user, repoLabel, children }: AppShellProps) {
             </form>
           </div>
         </header>
+
+        <Suspense fallback={null}>
+          <JudgeBar isDemo={user.isDemo} />
+        </Suspense>
 
         <main id="main" className="mx-auto w-full max-w-[1280px] px-4 py-8 sm:px-8 sm:py-10">
           {children}

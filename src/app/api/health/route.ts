@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
 import { db, getDbKind } from '@/db';
-import { getFeatures } from '@/lib/env';
 import { createLogger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -22,9 +21,7 @@ export async function GET(): Promise<NextResponse> {
     return NextResponse.json({
       status: 'ok',
       database: { kind: getDbKind(), reachable: true },
-      features: getFeatures(),
       latencyMs: Date.now() - started,
-      timestamp: new Date().toISOString(),
     });
   } catch (err) {
     log.error('Health check failed', { error: (err as Error).message });

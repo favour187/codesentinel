@@ -194,6 +194,16 @@ See `docs/environment.md` for `CRON_SECRET`.
 
 ---
 
+## Production (Render)
+
+1. Set `APP_URL` to `https://<service>.onrender.com`.
+2. OAuth callback: `https://<service>.onrender.com/api/auth/github/callback`
+3. Webhook: `https://<service>.onrender.com/api/webhooks/github`
+4. Same permissions and events as above.
+5. Put `GITHUB_APP_PRIVATE_KEY` in the Render env (newlines as `\n`). Never commit the PEM.
+
+Development uses localhost (or a tunnel). Demo uses no GitHub at all (`source: 'demo'`). Production requires `DATABASE_URL` + `SESSION_SECRET` + `ENCRYPTION_KEY`.
+
 ## Verification
 
 | Check | Expected |

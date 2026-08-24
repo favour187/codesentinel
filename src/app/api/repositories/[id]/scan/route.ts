@@ -6,6 +6,7 @@ import { enqueueScan } from '@/guardian/jobs';
 import { executeScan } from '@/scanner/persistence';
 import { demoFixturePath } from '@/lib/demo/fixture';
 import { createLogger } from '@/lib/logger';
+import { rateLimit } from '@/lib/rate-limit';
 
 /**
  * Manually trigger a scan.
@@ -29,6 +30,10 @@ export async function POST(
 ): Promise<NextResponse> {
   try {
     const user = await requireUser();
+    const limited = rateLimit(`scan:${user.id}`, 8, 60_000);
+    if (!limited.ok) {
+      return NextResponse.json({ ok: false, error: 'Too many scan requests. Try again shortly.' }, { status: 429 });
+    }
     const { id } = await params;
     await assertRepositoryAccess(user.id, id);
 
@@ -84,6 +89,6 @@ export async function POST(
     }
     const message = err instanceof Error ? err.message : String(err);
     log.error('Manual scan failed', { error: message });
-    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: 'Scan failed. Check the server logs and retry.' }, { status: 500 });
   }
 }

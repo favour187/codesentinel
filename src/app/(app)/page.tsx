@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ScoreRing, ScoreBar } from '@/components/dashboard/score-ring';
 import { ConnectRepository } from '@/components/dashboard/connect-repository';
 import { ScanButton } from '@/components/dashboard/scan-button';
+import { DemoResetButton } from '@/components/dashboard/demo-reset-button';
 import { Landing } from '@/components/marketing/landing';
 import { getCurrentUser } from '@/lib/auth/current-user';
 import { listRepositoriesForUser } from '@/lib/repositories';
@@ -67,6 +68,7 @@ export default async function OverviewPage() {
               Guardian {repo.guardianEnabled || repo.isDemo ? 'active' : 'off'}
             </Badge>
             <ScanButton repositoryId={repo.id} />
+            {repo.isDemo ? <DemoResetButton /> : null}
           </div>
         }
       />

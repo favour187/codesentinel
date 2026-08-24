@@ -68,6 +68,8 @@ Open http://localhost:3000 → **Explore Demo** → **Run scan**.
 
 Script: [`docs/DEMO.md`](./docs/DEMO.md)
 
+Add `?judge=1` for a shortcut bar. **Reset demo** (demo only) wipes fixture analysis and re-scans. It cannot touch a GitHub repository.
+
 ## Install
 
 Requires Node 20+. PostgreSQL is optional locally (embedded PGlite if `DATABASE_URL` is empty).

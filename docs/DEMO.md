@@ -1,47 +1,26 @@
-# Two-minute demo
+# Demo
 
-Repeatable path. Uses the bundled fixture and the same scanners as production.
+## 30-second pitch
 
-## 0:00 — Introduce
+Code assistants help you write code. CodeSentinel is an autonomous **guardian** for a GitHub repository: it scans real files, maps how a change can spread, explains findings with optional grounded AI, and never applies a fix without review.
 
-Open the landing page. One line: *Code assistants help you write code. CodeSentinel helps you understand, protect, and verify it.*
+## 2-minute path
 
-Click **Explore Demo**. No GitHub credentials.
+1. Open `/` → **Explore Demo** (no GitHub keys).
+2. **Run scan** — same scanners as production, on `fixtures/demo-repo`.
+3. Overview: health + risk + top finding (badge: Demo fixture).
+4. **Analysis** / **Guardian** / **Testing** / **Codebase** — real findings, events, test gaps, architecture.
+5. **Fix Center** — explain / generate patch / generate tests. Apply to GitHub stays disabled unless the App has write access.
+6. **Reset demo** to repeat from a clean scan.
 
-## 0:15 — Healthy start
+Optional: add `?judge=1` for a shortcut bar (Health, Guardian, Findings, Impact, Tests, Fix).
 
-Overview shows the demo fixture badge. If there is no health ring yet, click **Run scan**. Wait for the scan to finish (real scanners on `fixtures/demo-repo`).
+If AI keys are missing, scanners still run. The UI says AI is unavailable — it does not invent an explanation.
 
-## 0:30 — Risk appears
+## Technical
 
-Point at the health score and the current risk badge. Open **Analysis**. The fixture contains real issues: hardcoded credentials, unsafe execution, Docker as root, thin tests.
+Deterministic scanners + digital twin first. LLM is optional and evidence-bounded. Webhooks verify HMAC. Demo data is `source: 'demo'` and cannot be mixed with a real repo.
 
-## 0:45 — Guardian
+## Highlights
 
-Open **Guardian**. Control center: last scan, activity, recommendations. Explain that a GitHub Check reports risk; it only blocks a merge if branch protection requires that check.
-
-## 1:00 — Blast radius + tests
-
-Open **Codebase**. Show architecture layers and a package advisory if present. Open **Testing**. Show module linkage (not fake coverage) and a test gap on an exported symbol.
-
-## 1:15 — AI explain (optional)
-
-If an LLM key is set, open a finding in **Fix Center** and generate an explanation. If not: say scanners still ran; AI is optional.
-
-## 1:30 — Fix
-
-Stay in Fix Center. Generate a patch. Stress: **nothing is applied until you approve**.
-
-## 1:45 — Verify
-
-Show the suggested test. Do not claim “tests passed” unless they actually ran.
-
-## 2:00 — Close
-
-Back to Overview. Health and findings come from the last real scan. Demo data stays labelled **Demo fixture**.
-
-### If something fails
-
-- Scan error: retry **Run scan**. Check `/api/health`.
-- Empty Overview: you are not in a demo session — use Explore Demo again.
-- No AI: expected without `FEATHERLESS_API_KEY` / `GROQ_API_KEY`.
+Guardian · twin / blast radius · test intelligence · secret redaction · explicit approval · works without AI.
