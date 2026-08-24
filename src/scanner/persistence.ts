@@ -14,6 +14,9 @@ import {
 import { createLogger } from '@/lib/logger';
 import { rebuildComponents } from '@/twin/components';
 import { indexRepository } from '@/twin/indexer';
+import { recordEvent } from '@/guardian/events';
+import { selectScanners } from '@/guardian/scan-strategy';
+import { getScanner } from './registry';
 import { runScan, type RunScanOptions, type ScanResult } from './orchestrator';
 import { parseManifests } from './scanners/dependencies';
 import {
@@ -51,6 +54,7 @@ export interface ExecuteScanOptions extends RunScanOptions {
   commitSha?: string | null;
   ref?: string | null;
   pullRequestId?: string | null;
+  changedPaths?: readonly string[];
 }
 
 export interface ExecutedScan {
@@ -101,7 +105,17 @@ export async function executeScan(options: ExecuteScanOptions): Promise<Executed
       .limit(1);
     const previousHealth = previousSnapshotRows[0]?.health ?? null;
 
-    const result = await runScan(options);
+    const strategy =
+      options.scanners || !options.changedPaths
+        ? null
+        : selectScanners(options.changedPaths);
+    const targeted = strategy
+      ? strategy.scanners.map((id) => getScanner(id)).filter((s): s is NonNullable<typeof s> => Boolean(s))
+      : undefined;
+    const result = await runScan({
+      ...options,
+      scanners: options.scanners ?? targeted,
+    });
     const delta = diffFindings(previousFingerprints, result.findings);
 
     await persistFindings(scanId, options.repositoryId, result, delta);
@@ -153,6 +167,26 @@ export async function executeScan(options: ExecuteScanOptions): Promise<Executed
       .update(repositories)
       .set({ lastScanAt: new Date(), updatedAt: new Date() })
       .where(eq(repositories.id, options.repositoryId));
+
+    await recordEvent({
+      repositoryId: options.repositoryId,
+      type: 'SCAN_COMPLETED',
+      title: `Scan completed (${strategy?.mode ?? 'full'})`,
+      detail: `${result.findings.length} findings · health ${Math.round(result.scores.health)} · ${result.durationMs}ms`,
+      level: result.findings.some((f) => f.severity === 'critical') ? 'warning' : 'success',
+      dedupeKey: `scan:${scanId}`,
+      payload: { scanId, mode: strategy?.mode ?? 'full', durationMs: result.durationMs },
+    });
+    if (delta.introduced.some((f) => f.category === 'secrets')) {
+      await recordEvent({
+        repositoryId: options.repositoryId,
+        type: 'SECRET_DETECTED',
+        title: 'Secret detected',
+        detail: 'A credential-shaped value was found. The value is never shown.',
+        level: 'critical',
+        dedupeKey: `secret:${scanId}`,
+      });
+    }
 
     log.info('Scan persisted', {
       scanId,

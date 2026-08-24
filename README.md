@@ -22,8 +22,8 @@ and verified.** Every phase ends with four gates: `tsc`, `eslint`, `vitest`, `ne
 | 3 | Guardian: webhooks, PR/push scanning, checks, PR comments, scan queue | **Done** |
 | 4 | Analysis, Codebase and Fix Center pages built on the stored findings | **Done** (engine + Fix Center) |
 | 5 | Repository-grounded AI explanations and digital twin | **Done** |
-| 6 | Test intelligence, dependency and architecture maps | **Done** |
-| 7 | Insights, trends, blast-radius UI | Planned |
+| 6 | Autonomous guardian, risk 2.0, CI/config, policies | **Done** |
+| 7 | Deeper insights polish | Planned |
 | 8 | Polish, hardening, deployment | Planned |
 
 Phase 3 was brought forward ahead of the remaining analysis pages: continuous scanning is

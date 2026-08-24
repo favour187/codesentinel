@@ -3,6 +3,9 @@ import { getDb } from '@/db';
 import { commits, findings, pullRequests, scans } from '@/db/schema';
 import { executeScan } from '@/scanner/persistence';
 import { runScan } from '@/scanner/orchestrator';
+import { getScanner } from '@/scanner/registry';
+import { selectScanners } from '@/guardian/scan-strategy';
+import { recordEvent } from '@/guardian/events';
 import type { ScanResult } from '@/scanner/orchestrator';
 import type { Finding } from '@/scanner/types';
 import { GitHubClient } from '@/github/client';
@@ -165,7 +168,15 @@ export async function scanPullRequest(options: PullRequestScanOptions): Promise<
     scanId = scanRow.id;
 
     try {
-      headResult = await runScan({ repositoryId: repository.id, rootDir: headCheckout.dir });
+      const strategy = selectScanners(files.map((f) => f.filename));
+      const targeted = strategy.scanners
+        .map((id) => getScanner(id))
+        .filter((s): s is NonNullable<typeof s> => Boolean(s));
+      headResult = await runScan({
+        repositoryId: repository.id,
+        rootDir: headCheckout.dir,
+        scanners: targeted.length > 0 ? targeted : undefined,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       await db
@@ -281,6 +292,16 @@ export async function scanPullRequest(options: PullRequestScanOptions): Promise<
     .update(scans)
     .set({ checkRunId, checkConclusion: check.conclusion ?? null })
     .where(eq(scans.id, scanId));
+
+  await recordEvent({
+    repositoryId: repository.id,
+    type: 'PR_ANALYZED',
+    title: `PR #${number} analyzed`,
+    detail: `${risk.level} risk (${risk.score}) · ${newFindings.length} new · ${resolvedFingerprints.length} resolved`,
+    level: risk.shouldBlock ? 'critical' : risk.level === 'high' || risk.level === 'critical' ? 'warning' : 'success',
+    dedupeKey: `pr:${number}:${headSha}`,
+    payload: { number, risk: risk.score, level: risk.level, blocked: risk.shouldBlock },
+  });
 
   log.info('Pull request scan complete', {
     repository: repository.fullName,

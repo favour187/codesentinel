@@ -1,3 +1,5 @@
+import { cicdScanner } from './scanners/cicd';
+import { configScanner } from './scanners/config';
 import { dependencyScanner } from './scanners/dependencies';
 import { infrastructureScanner } from './scanners/infrastructure';
 import { qualityScanner } from './scanners/quality';
@@ -20,6 +22,8 @@ export const SCANNERS: Scanner[] = [
   qualityScanner,
   testingScanner,
   infrastructureScanner,
+  cicdScanner,
+  configScanner,
 ];
 
 export function getScanner(id: string): Scanner | undefined {

@@ -91,6 +91,38 @@ export type JobStatus = (typeof JOB_STATUSES)[number];
 export const MEMORY_KINDS = ['decision', 'exception', 'accepted_risk', 'policy', 'convention'] as const;
 export type MemoryKind = (typeof MEMORY_KINDS)[number];
 
+/** Internal guardian events — the observe/analyze loop. */
+export const GUARDIAN_EVENT_TYPES = [
+  'CODE_CHANGED',
+  'DEPENDENCY_CHANGED',
+  'PR_OPENED',
+  'PR_ANALYZED',
+  'TEST_FAILED',
+  'FINDING_CREATED',
+  'FINDING_RESOLVED',
+  'FINDING_REGRESSED',
+  'SECRET_DETECTED',
+  'HEALTH_CHANGED',
+  'CONFIG_CHANGED',
+  'SCAN_COMPLETED',
+  'FIX_VERIFIED',
+  'POLICY_TRIGGERED',
+] as const;
+export type GuardianEventType = (typeof GUARDIAN_EVENT_TYPES)[number];
+
+export const POLICY_TRIGGERS = [
+  'new_finding',
+  'secret_detected',
+  'dependency_change',
+  'test_gap',
+  'health_drop',
+  'regression',
+] as const;
+export type PolicyTrigger = (typeof POLICY_TRIGGERS)[number];
+
+export const POLICY_ACTIONS = ['request_changes', 'warn', 'notify', 'run_analysis'] as const;
+export type PolicyAction = (typeof POLICY_ACTIONS)[number];
+
 /** Outcome of an AI request, for the activity log. */
 export const AI_REQUEST_STATUSES = ['ok', 'failed', 'unavailable', 'cached'] as const;
 export type AIRequestStatus = (typeof AI_REQUEST_STATUSES)[number];
@@ -648,9 +680,55 @@ export const repositoryMemory = pgTable(
     /** Optional paths this fact applies to, for relevance filtering. */
     paths: jsonb('paths').$type<string[]>().notNull().default([]),
     createdByUserId: uuid('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    /** Always 'human' today. AI is forbidden from writing memory. */
+    source: text('source').notNull().default('human'),
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
     ...timestamps,
   },
   (t) => [index('repository_memory_repo_idx').on(t.repositoryId, t.kind)],
+);
+
+/** Durable, repository-scoped activity for the guardian timeline. */
+export const guardianEvents = pgTable(
+  'guardian_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    repositoryId: uuid('repository_id')
+      .notNull()
+      .references(() => repositories.id, { onDelete: 'cascade' }),
+    type: text('type').$type<GuardianEventType>().notNull(),
+    title: text('title').notNull(),
+    detail: text('detail'),
+    level: text('level').notNull().default('info'),
+    dedupeKey: text('dedupe_key'),
+    payload: jsonb('payload').$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [
+    index('guardian_events_repo_created_idx').on(t.repositoryId, t.createdAt),
+    uniqueIndex('guardian_events_dedupe_idx').on(t.repositoryId, t.dedupeKey),
+  ],
+);
+
+/** Simple WHEN / IF / THEN rules. Not a programming language. */
+export const policyRules = pgTable(
+  'policy_rules',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    repositoryId: uuid('repository_id')
+      .notNull()
+      .references(() => repositories.id, { onDelete: 'cascade' }),
+    enabled: boolean('enabled').notNull().default(true),
+    name: text('name').notNull(),
+    trigger: text('trigger').$type<PolicyTrigger>().notNull(),
+    condition: jsonb('condition')
+      .$type<{ severity?: Severity; risk?: string; category?: string }>()
+      .notNull()
+      .default({}),
+    action: text('action').$type<PolicyAction>().notNull(),
+    ...timestamps,
+  },
+  (t) => [index('policy_rules_repo_idx').on(t.repositoryId)],
 );
 
 /* -------------------------------------------------------------------------- */

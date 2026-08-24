@@ -64,11 +64,11 @@ function stubScanner(id: string, overrides: Partial<Scanner> = {}): Scanner {
 }
 
 describe('registry', () => {
-  it('exposes the six MVP scanners with unique ids', () => {
+  it('exposes the registered scanners with unique ids', () => {
     const ids = SCANNERS.map((s) => s.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids.sort()).toEqual(
-      ['dependencies', 'infrastructure', 'quality', 'secrets', 'security', 'testing'].sort(),
+      ['cicd', 'config', 'dependencies', 'infrastructure', 'quality', 'secrets', 'security', 'testing'].sort(),
     );
   });
 

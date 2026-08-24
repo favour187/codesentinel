@@ -24,6 +24,8 @@ export interface MemoryEntry {
   readonly body: string;
   readonly paths: readonly string[];
   readonly createdByUserId: string | null;
+  readonly source: string;
+  readonly expiresAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -52,7 +54,8 @@ export async function listMemory(repositoryId: string): Promise<MemoryEntry[]> {
     .where(eq(repositoryMemory.repositoryId, repositoryId))
     .orderBy(desc(repositoryMemory.updatedAt));
 
-  return rows.map(toEntry);
+  const now = Date.now();
+  return rows.map(toEntry).filter((e) => !e.expiresAt || e.expiresAt.getTime() > now);
 }
 
 export async function getMemoryEntry(repositoryId: string, id: string): Promise<MemoryEntry | null> {
@@ -72,6 +75,7 @@ export interface MemoryInput {
   readonly body: string;
   /** Empty means the fact applies to the whole repository. */
   readonly paths?: readonly string[];
+  readonly expiresAt?: Date | null;
 }
 
 export class MemoryValidationError extends Error {
@@ -120,6 +124,8 @@ export async function createMemory(
       body: clean.body,
       paths: [...(clean.paths ?? [])],
       createdByUserId: userId,
+      source: 'human',
+      expiresAt: input.expiresAt ?? null,
     })
     .returning();
 
@@ -142,6 +148,7 @@ export async function updateMemory(
       title: clean.title,
       body: clean.body,
       paths: [...(clean.paths ?? [])],
+      expiresAt: input.expiresAt ?? null,
       updatedAt: new Date(),
     })
     .where(and(eq(repositoryMemory.repositoryId, repositoryId), eq(repositoryMemory.id, id)))
@@ -169,6 +176,8 @@ function toEntry(row: typeof repositoryMemory.$inferSelect): MemoryEntry {
     body: row.body,
     paths: row.paths,
     createdByUserId: row.createdByUserId,
+    source: row.source,
+    expiresAt: row.expiresAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

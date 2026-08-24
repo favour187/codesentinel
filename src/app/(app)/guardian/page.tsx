@@ -17,6 +17,9 @@ import { RiskFactors } from '@/components/guardian/risk-factors';
 import { getCurrentUser } from '@/lib/auth/current-user';
 import { listRepositoriesForUser } from '@/lib/repositories';
 import { getGuardianOverview } from '@/lib/guardian-queries';
+import { getGuardianSignals } from '@/lib/guardian-risk';
+import { getLatestSnapshot } from '@/lib/analysis-queries';
+import { GuardianControlCenter } from '@/components/guardian/control-center';
 import type { GuardedPullRequest, ScanJobSummary, WebhookDeliverySummary } from '@/lib/guardian-queries';
 import type { ReactNode } from 'react';
 import { formatDuration, timeAgo } from '@/lib/utils';
@@ -60,7 +63,11 @@ export default async function GuardianPage() {
     );
   }
 
-  const overview = await getGuardianOverview(repo.id);
+  const [overview, signals, snapshot] = await Promise.all([
+    getGuardianOverview(repo.id),
+    getGuardianSignals(repo.id),
+    getLatestSnapshot(repo.id),
+  ]);
 
   if (!overview) {
     return (
@@ -103,7 +110,38 @@ export default async function GuardianPage() {
         }
       />
 
+      <GuardianControlCenter
+        active={connection.guardianEnabled || connection.source === 'demo'}
+        health={snapshot?.health ?? null}
+        risk={signals.risk}
+        lastScanAt={connection.lastScanAt}
+        events={signals.events}
+        recommendations={signals.recommendations}
+      />
+
+      {signals.attackPaths.length > 0 ? (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Defensive attack paths</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-3">
+              {signals.attackPaths.slice(0, 5).map((path) => (
+                <li key={path.hops.join('>')} className="text-sm">
+                  <Badge variant={path.confidence === 'confirmed' ? 'high' : 'outline'}>
+                    {path.confidence}
+                  </Badge>
+                  <span className="ml-2 font-mono text-xs">{path.hops.join(' → ')}</span>
+                  <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">{path.evidence}</p>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
+
       {/* Connection state first: everything below is meaningless if events never arrive. */}
+      <div className="mt-6">
       <ConnectionBanner
         installed={connection.installed}
         guardianEnabled={connection.guardianEnabled}
@@ -220,8 +258,10 @@ export default async function GuardianPage() {
 
       <p className="mt-6 text-xs text-[hsl(var(--muted-foreground))]">
         The guardian never modifies your code. It analyses, reports and requests changes — applying a fix
-        always requires your explicit approval in Fix Center.
+        always requires your explicit approval in Fix Center. A GitHub Check is a report; it only blocks
+        a merge when branch protection requires that check.
       </p>
+      </div>
     </>
   );
 }

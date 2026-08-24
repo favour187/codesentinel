@@ -371,10 +371,14 @@ CREATE TABLE IF NOT EXISTS repository_memory (
   body text NOT NULL,
   paths jsonb NOT NULL DEFAULT '[]'::jsonb,
   created_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  source text NOT NULL DEFAULT 'human',
+  expires_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS repository_memory_repo_idx ON repository_memory (repository_id, kind);
+ALTER TABLE repository_memory ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'human';
+ALTER TABLE repository_memory ADD COLUMN IF NOT EXISTS expires_at timestamptz;
 
 CREATE TABLE IF NOT EXISTS symbols (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -469,6 +473,33 @@ CREATE TABLE IF NOT EXISTS regression_memory (
 );
 CREATE INDEX IF NOT EXISTS regression_memory_repo_rule_idx ON regression_memory (repository_id, rule_id);
 CREATE INDEX IF NOT EXISTS regression_memory_repo_idx ON regression_memory (repository_id);
+
+CREATE TABLE IF NOT EXISTS guardian_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  repository_id uuid NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
+  type text NOT NULL,
+  title text NOT NULL,
+  detail text,
+  level text NOT NULL DEFAULT 'info',
+  dedupe_key text,
+  payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS guardian_events_repo_created_idx ON guardian_events (repository_id, created_at);
+CREATE UNIQUE INDEX IF NOT EXISTS guardian_events_dedupe_idx ON guardian_events (repository_id, dedupe_key);
+
+CREATE TABLE IF NOT EXISTS policy_rules (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  repository_id uuid NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
+  enabled boolean NOT NULL DEFAULT true,
+  name text NOT NULL,
+  trigger text NOT NULL,
+  condition jsonb NOT NULL DEFAULT '{}'::jsonb,
+  action text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS policy_rules_repo_idx ON policy_rules (repository_id);
 `;
 
 /** All table names, in dependency order (useful for tests / teardown). */
@@ -497,6 +528,8 @@ export const TABLE_NAMES = [
   'components',
   'index_state',
   'regression_memory',
+  'guardian_events',
+  'policy_rules',
 ] as const;
 
 export async function bootstrapSchema(database: Database): Promise<void> {
