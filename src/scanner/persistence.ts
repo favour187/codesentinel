@@ -12,6 +12,7 @@ import {
   type ScanStatus,
 } from '@/db/schema';
 import { createLogger } from '@/lib/logger';
+import { rebuildComponents } from '@/twin/components';
 import { indexRepository } from '@/twin/indexer';
 import { runScan, type RunScanOptions, type ScanResult } from './orchestrator';
 import { parseManifests } from './scanners/dependencies';
@@ -126,6 +127,9 @@ export async function executeScan(options: ExecuteScanOptions): Promise<Executed
         edges: indexed.edgeCount,
         durationMs: indexed.durationMs,
       });
+      // Components are derived from the graph plus this scan's findings, so
+      // they are rebuilt after both exist.
+      await rebuildComponents(options.repositoryId, scanId);
     } catch (error: unknown) {
       log.error('Digital twin indexing failed; scan results are unaffected', {
         scanId,

@@ -67,6 +67,24 @@ async function main(): Promise<void> {
     console.log(`  [${edge.type}] ${edge.fromKey} -> ${edge.toKey} (${edge.confidence}) ${edge.evidence ?? ''}`);
   }
 
+  const { componentGraph } = await import('@/twin/components');
+  const graph = await componentGraph(repo.id);
+  console.log('\n=== COMPONENTS ===');
+  for (const n of graph.nodes) {
+    console.log(
+      `  ${n.key.padEnd(18)} ${n.layer.padEnd(14)} files=${String(n.fileCount).padEnd(3)} deps=${String(n.dependencyCount).padEnd(2)} dependents=${String(n.dependentCount).padEnd(2)} findings=${String(n.findingCount).padEnd(3)} untested=${String(n.untestedFiles).padEnd(2)} sec=${n.securitySensitive ? 'Y' : 'n'} risk=${n.riskScore} (${n.riskLevel})`,
+    );
+  }
+  console.log('\n=== COMPONENT EDGES ===');
+  for (const e of graph.edges) console.log(`  ${e.from} -> ${e.to} (${e.fileCount} file imports)`);
+
+  console.log('\n=== RISK FACTORS (top component) ===');
+  const top = graph.nodes[0];
+  if (top) {
+    console.log(`  ${top.name} — ${top.riskScore} (${top.riskLevel})`);
+    for (const f of top.riskFactors) console.log(`    +${f.points}  ${f.label}: ${f.detail}`);
+  }
+
   const untouched = await db
     .select()
     .from(codeEdges)

@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { dependencies, files } from '@/db/schema';
 import { computeBlastRadius, hotspotPaths } from '@/analysis/blast-radius';
+import { type Layer, layerOf } from '@/twin/components';
 import { computeTechnicalDebt } from '@/analysis/technical-debt';
 import { runAITask } from '../router';
 import type { AIResult, RouterOptions } from '../router';
@@ -48,37 +49,27 @@ export async function detectArchitecture(repositoryId: string): Promise<{
 
   const rows = await db.select({ path: files.path, kind: files.kind }).from(files).where(eq(files.scanId, scanId));
 
-  const rules: ReadonlyArray<{ name: string; test: (p: string, kind: string | null) => boolean }> = [
-    {
-      name: 'Frontend',
-      test: (p, kind) => kind === 'component' || /\.(tsx|jsx|vue|svelte)$/.test(p) || /(^|\/)(components|views|pages)\//.test(p),
-    },
-    {
-      name: 'API',
-      test: (p, kind) => kind === 'route' || /(^|\/)(api|routes?|controllers?|handlers?|endpoints?)\//.test(p),
-    },
-    {
-      name: 'Services',
-      test: (p) => /(^|\/)(services?|lib|domain|core|usecases?|business)\//.test(p),
-    },
-    {
-      name: 'Data',
-      test: (p) => /(^|\/)(db|database|models?|repositories|entities|schema|migrations?|dal)\//.test(p) || /schema\.(ts|js|sql|prisma)$/.test(p),
-    },
-    {
-      name: 'Infrastructure',
-      test: (p) => /(^|\/)(\.github|infra|deploy|terraform|k8s)\//.test(p) || /^(Dockerfile|docker-compose)/.test(p),
-    },
-    { name: 'Tests', test: (p, kind) => kind === 'test' || /(^|\/)(tests?|__tests__|spec)\//.test(p) || /\.(test|spec)\./.test(p) },
-  ];
+  /*
+   * Layer classification lives in the Digital Twin so the architecture map and
+   * this explanation cannot drift into two different vocabularies. `kind` still
+   * refines the result: the scanner already decided a file is a route or a
+   * component, and that beats a path regex.
+   */
+  const layerFor = (p: string, kind: string | null): Layer | null => {
+    if (kind === 'test') return 'Tests';
+    if (kind === 'route') return 'API';
+    if (kind === 'component') return 'Frontend';
+    const layer = layerOf(p);
+    return layer === 'Other' ? null : layer;
+  };
 
   const layers = new Map<string, string[]>();
   for (const row of rows) {
-    const rule = rules.find((r) => r.test(row.path, row.kind));
-    if (!rule) continue;
-    const list = layers.get(rule.name);
+    const layer = layerFor(row.path, row.kind);
+    if (!layer) continue;
+    const list = layers.get(layer);
     if (list) list.push(row.path);
-    else layers.set(rule.name, [row.path]);
+    else layers.set(layer, [row.path]);
   }
 
   const entryPoints = rows
