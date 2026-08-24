@@ -20,6 +20,11 @@ const EnvSchema = z.object({
   APP_URL: z.string().url().default('http://localhost:3000'),
 
   DATABASE_URL: z.string().optional().default(''),
+  /** postgres.js pool size. Keep tiny on 512 MB hosts. */
+  DB_POOL_MAX: z.preprocess(
+    (v) => (v === '' || v === undefined ? undefined : v),
+    z.coerce.number().int().positive().optional(),
+  ),
 
   SESSION_SECRET: z.string().min(16).default('dev-only-insecure-session-secret-change-me-please-32b'),
   ENCRYPTION_KEY: z.string().optional().default(''),

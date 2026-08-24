@@ -87,10 +87,10 @@ npm start
 
 One **Web Service**. No separate worker.
 
-1. Use `render.yaml` or create a Node web service (`npm ci && npm run build`, start `npm start`).
+1. Use `render.yaml` (free web, 512 MB) or create a Node web service.
 2. Health check: `GET /api/health`
-3. Set `APP_URL`, `SESSION_SECRET`, and preferably `DATABASE_URL` + `ENCRYPTION_KEY`.
-4. After first deploy, run `npm run db:migrate` against that database once.
+3. Set `APP_URL`, `SESSION_SECRET`, and **`DATABASE_URL`** + `ENCRYPTION_KEY`. PGlite will OOM on Render free.
+4. Boot runs `scripts/render-start.sh` (migrate + standalone server, heap capped at 384 MB).
 
 Details: [`docs/deployment.md`](./docs/deployment.md)
 

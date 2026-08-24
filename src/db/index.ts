@@ -43,7 +43,8 @@ function createDatabase(): { db: Database; kind: DbKind } {
 
   if (url) {
     const client = postgres(url, {
-      max: env.NODE_ENV === 'production' ? 10 : 3,
+      // Render free is 512 MB — a 10-connection pool plus Next.js OOMs.
+      max: env.DB_POOL_MAX ?? (env.NODE_ENV === 'production' ? 2 : 3),
       idle_timeout: 20,
       connect_timeout: 10,
       onnotice: () => {},

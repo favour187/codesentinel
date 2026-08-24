@@ -16,12 +16,16 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Smaller runtime image for 512 MB hosts (Render free).
+  output: 'standalone',
   outputFileTracingIncludes: {
     '/api/**': ['./fixtures/**/*'],
+    '/': ['./fixtures/**/*'],
   },
   serverExternalPackages: ['@electric-sql/pglite', 'postgres'],
   eslint: {
-    ignoreDuringBuilds: false,
+    // Lint locally / in CI. Skipping on Render saves hundreds of MB during build.
+    ignoreDuringBuilds: process.env.RENDER === 'true',
     dirs: ['src'],
   },
   async headers() {

@@ -9,12 +9,23 @@ container.
 
 One Web Service. Scanner work runs inside the web process (the engine is not tied to HTTP and can move later).
 
-1. Blueprint: `render.yaml`, or create a Node service with `npm ci && npm run build` / `npm start`.
+1. Blueprint: `render.yaml` (free web + 30-day free Postgres), or create a Node service.
 2. Health check path: `/api/health`.
 3. Set `APP_URL` to `https://<service>.onrender.com`.
-4. Prefer a Render Postgres instance and set `DATABASE_URL`. Without it the app still boots on PGlite (ephemeral on Render).
+4. Prefer Render Postgres (or Neon) and set `DATABASE_URL`. **Do not run PGlite on Render** — the WASM engine will OOM a 512 MB instance.
 5. Generate `SESSION_SECRET`. Set `ENCRYPTION_KEY` if you store GitHub tokens.
-6. Apply schema once: `npm run db:migrate` against `DATABASE_URL`.
+6. Schema is applied on boot (`scripts/render-start.sh`).
+
+### Free-tier memory (512 MB)
+
+Next.js 15 plus a default 10-connection pool will be killed with *ran out of memory*. The Blueprint already:
+
+- Caps the Node heap (`NODE_OPTIONS=--max-old-space-size=384`)
+- Builds with a 460 MB heap and skips ESLint on Render
+- Starts the **standalone** server (`node server.js`), not `next start`
+- Uses `DB_POOL_MAX=2`
+
+If the dashboard is enough but a large scan still OOMs, upgrade the web service to Starter (2 GB) or scan a smaller repo. Free Postgres expires after 30 days — export or move to Neon before then.
 
 Do not put API keys or PEMs in the repo. Keepalive is optional and must not be required for correctness.
 
