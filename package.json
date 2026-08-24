@@ -46,14 +46,17 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "tailwind-merge": "^3.6.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "postcss": "^8.5.26",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.12",
     "typescript": "^5.9.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
-    "@types/node": "^26.2.0",
+    "@types/node": "^20.17.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
     "@vitejs/plugin-react": "^6.1.0",
@@ -61,15 +64,12 @@
     "eslint": "^9.39.5",
     "eslint-config-next": "^15.5.23",
     "jsdom": "^30.0.1",
-    "postcss": "^8.5.26",
-    "tailwindcss": "^4.3.3",
-    "tsx": "^4.23.12",
     "vitest": "^4.1.11"
   },
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=20.0.0"
+    "node": "20.x"
   },
   "overrides": {
     "sharp": "^0.35.3",

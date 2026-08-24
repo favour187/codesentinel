@@ -10,6 +10,13 @@ container.
 One Web Service. Scanner work runs inside the web process (the engine is not tied to HTTP and can move later).
 
 1. Blueprint: `render.yaml` (free web + 30-day free Postgres), or create a Node service.
+   If the dashboard still has the default **Build Command** `npm install; npm run build`, change it to:
+
+   `NPM_CONFIG_PRODUCTION=false npm ci && npm run build`
+
+   **Start Command:** `sh scripts/render-start.sh`
+
+   Render sets `NODE_ENV=production` during install, which skips Tailwind unless it lives in `dependencies` (it does now). Pin Node to **20.x** (see `.node-version`).
 2. Health check path: `/api/health`.
 3. Set `APP_URL` to `https://<service>.onrender.com`.
 4. Prefer Render Postgres (or Neon) and set `DATABASE_URL`. **Do not run PGlite on Render** — the WASM engine will OOM a 512 MB instance.

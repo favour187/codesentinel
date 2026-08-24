@@ -4,7 +4,7 @@ services:
     runtime: node
     # 512 MB. Starter (2 GB) is optional if scans grow.
     plan: free
-    buildCommand: NODE_OPTIONS="--max-old-space-size=460" NEXT_TELEMETRY_DISABLED=1 npm ci && NODE_OPTIONS="--max-old-space-size=460" NEXT_TELEMETRY_DISABLED=1 npm run build
+    buildCommand: NODE_OPTIONS="--max-old-space-size=460" NEXT_TELEMETRY_DISABLED=1 NPM_CONFIG_PRODUCTION=false npm ci && NODE_OPTIONS="--max-old-space-size=460" NEXT_TELEMETRY_DISABLED=1 npm run build
     startCommand: sh scripts/render-start.sh
     healthCheckPath: /api/health
     envVars:
