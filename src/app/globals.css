@@ -23,6 +23,8 @@
     --background: 0 0% 100%;
     --surface: 240 20% 99%;
     --surface-raised: 0 0% 100%;
+    /* Recessed panels: code blocks and diffs sit *below* the page surface. */
+    --surface-sunken: 240 14% 97%;
     --foreground: 240 10% 8%;
     --muted: 240 5% 96%;
     --muted-foreground: 240 4% 46%;
@@ -51,6 +53,7 @@
     --background: 240 12% 6%;
     --surface: 240 10% 8%;
     --surface-raised: 240 9% 11%;
+    --surface-sunken: 240 12% 7%;
     --foreground: 240 15% 96%;
     --muted: 240 8% 14%;
     --muted-foreground: 240 6% 62%;
