@@ -80,7 +80,7 @@ export default async function AnalysisPage() {
                         <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
                           <div>
                             <dt className="text-xs text-[hsl(var(--muted-foreground))]">Where</dt>
-                            <dd className="font-mono text-xs">
+                            <dd className="break-all font-mono text-xs">
                               {finding.filePath ?? 'repository-wide'}
                               {full?.lineStart ? `:${full.lineStart}` : ''}
                             </dd>

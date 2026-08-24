@@ -38,7 +38,7 @@ export function ScanButton({ repositoryId }: { repositoryId: string }) {
   }
 
   return (
-    <div className="flex flex-col items-end gap-2">
+    <div className="flex flex-col items-start gap-2 sm:items-end">
       <Button onClick={run} disabled={pending} size="sm">
         {pending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Play className="size-4" aria-hidden="true" />}
         {pending ? 'Scanning…' : 'Run scan'}

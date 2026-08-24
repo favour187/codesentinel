@@ -28,10 +28,10 @@ export function ArchitectureMap({
                 className="rounded-lg border border-[hsl(var(--border))] px-4 py-3"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-sm font-medium">{component.name}</h3>
+                  <h3 className="min-w-0 text-sm font-medium">{component.name}</h3>
                   <Badge variant={RISK_VARIANT[component.riskLevel]}>{component.riskLevel}</Badge>
                 </div>
-                <p className="mt-1 font-mono text-xs text-[hsl(var(--muted-foreground))]">{component.rootPath}</p>
+                <p className="mt-1 break-all font-mono text-xs text-[hsl(var(--muted-foreground))]">{component.rootPath}</p>
                 <dl className="mt-3 grid grid-cols-3 gap-2 text-xs">
                   <div>
                     <dt className="text-[hsl(var(--muted-foreground))]">Files</dt>
@@ -80,8 +80,8 @@ export function ComponentEdges({
   return (
     <ul className="divide-y divide-[hsl(var(--border))]">
       {top.map((edge) => (
-        <li key={`${edge.from}->${edge.to}`} className="flex items-center justify-between gap-4 py-2.5 text-sm">
-          <span className="min-w-0 truncate">
+        <li key={`${edge.from}->${edge.to}`} className="flex flex-col gap-1 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <span className="min-w-0 break-words">
             <span className="font-medium">{names[edge.from] ?? edge.from}</span>
             <span className="mx-2 text-[hsl(var(--muted-foreground))]">→</span>
             <span className="font-medium">{names[edge.to] ?? edge.to}</span>

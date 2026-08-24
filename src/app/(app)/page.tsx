@@ -118,7 +118,7 @@ export default async function OverviewPage() {
               <Badge variant={SEV[top.severity]}>{top.severity}</Badge>
             </div>
             {top.filePath ? (
-              <p className="mt-1 font-mono text-sm text-[hsl(var(--muted-foreground))]">
+              <p className="mt-1 break-all font-mono text-sm text-[hsl(var(--muted-foreground))]">
                 {top.filePath}
                 {top.lineStart ? `:${top.lineStart}` : ''}
               </p>

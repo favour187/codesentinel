@@ -39,7 +39,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             onClick={onNavigate}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+              'group flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors lg:min-h-0 lg:py-2',
               active
                 ? 'bg-[hsl(var(--muted))] font-medium text-[hsl(var(--foreground))]'
                 : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]/60 hover:text-[hsl(var(--foreground))]',
@@ -109,8 +109,13 @@ export function MobileNav({ repoLabel, isDemo }: SidebarProps) {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
     };
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
   }, [open]);
 
   // The trigger lives inside a `backdrop-blur` header, which establishes a

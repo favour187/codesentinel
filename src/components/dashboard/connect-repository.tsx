@@ -41,7 +41,7 @@ export function ConnectRepository({ githubConnected, demoAvailable }: ConnectRep
 
   return (
     <Card className="mx-auto max-w-2xl">
-      <div className="space-y-6 p-8 sm:p-10">
+      <div className="space-y-6 p-5 sm:p-8 md:p-10">
         <div className="space-y-2">
           <h2 className="text-lg font-semibold tracking-tight">Connect a repository to begin</h2>
           <p className="text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">

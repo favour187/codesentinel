@@ -16,7 +16,7 @@ export async function Landing({ error }: { error?: string | null }) {
 
   return (
     <div className="min-h-screen bg-[hsl(var(--background))]">
-      <header className="mx-auto flex max-w-3xl items-center justify-between px-6 py-6">
+      <header className="mx-auto flex max-w-3xl items-center justify-between px-4 py-5 sm:px-6 sm:py-6">
         <div className="flex items-center gap-2.5">
           <div className="flex size-8 items-center justify-center rounded-lg bg-[hsl(var(--primary))]">
             <ShieldCheck className="size-4 text-[hsl(var(--primary-foreground))]" aria-hidden="true" />
@@ -25,8 +25,8 @@ export async function Landing({ error }: { error?: string | null }) {
         </div>
       </header>
 
-      <main id="main" className="mx-auto max-w-3xl px-6 pb-24 pt-8">
-        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+      <main id="main" className="mx-auto max-w-3xl px-4 pb-24 pt-6 sm:px-6 sm:pt-8">
+        <h1 className="text-[1.75rem] font-semibold leading-tight tracking-tight sm:text-4xl md:text-5xl">
           Your repository&rsquo;s autonomous code guardian.
         </h1>
         <p className="mt-4 max-w-xl text-base leading-relaxed text-[hsl(var(--muted-foreground))]">
@@ -50,7 +50,7 @@ export async function Landing({ error }: { error?: string | null }) {
             </Button>
           </form>
           {features.githubOAuth ? (
-            <Button asChild size="lg" variant="outline">
+            <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
               <a href="/api/auth/github">
                 <GitHubIcon className="size-4" />
                 Connect GitHub
