@@ -2,7 +2,7 @@
 
 **Your repository's autonomous code guardian.**
 
-Built for **[ReverieHacks 2026](https://reverie-hacks-2026.devpost.com/)** — **Software Development** track. Live on **Render**: [codesentinel-3yg4.onrender.com](https://codesentinel-3yg4.onrender.com). Judge notes: [`docs/REVERIEHACKS.md`](./docs/REVERIEHACKS.md).
+Built for **[Proof of Possible 2026](https://proof-of-possible-2026.devpost.com/)** — *Don’t pitch the future. Build evidence.* Live on **Render**: [codesentinel-3yg4.onrender.com](https://codesentinel-3yg4.onrender.com/?judge=1). Judge pack: [`docs/PROOF-OF-POSSIBLE.md`](./docs/PROOF-OF-POSSIBLE.md).
 
 Code assistants help developers *write* code. CodeSentinel helps them **understand, protect, and verify** a repository.
 

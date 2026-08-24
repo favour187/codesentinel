@@ -1,9 +1,9 @@
 # Demo
 
-## ReverieHacks 2026 (judges)
+## Proof of Possible 2026 (judges)
 
 Live: https://codesentinel-3yg4.onrender.com/?judge=1  
-Track: Software Development. Full pack: [`REVERIEHACKS.md`](./REVERIEHACKS.md).
+Don’t pitch — run the demo. Full pack: [`PROOF-OF-POSSIBLE.md`](./PROOF-OF-POSSIBLE.md).
 
 ## 30-second pitch
 
