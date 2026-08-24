@@ -39,6 +39,13 @@ describe('env validation', () => {
     expect(getFeatures().githubOAuth).toBe(true);
   });
 
+  it('strips wrapping quotes from API keys', () => {
+    resetEnvCache();
+    process.env.GROQ_API_KEY = '"gsk-quoted-key"';
+    expect(getEnv().GROQ_API_KEY).toBe('gsk-quoted-key');
+    expect(getFeatures().groq).toBe(true);
+  });
+
   it('enables the LLM feature when either AI provider has a key', () => {
     resetEnvCache();
     process.env.FEATHERLESS_API_KEY = 'fk-test-key';

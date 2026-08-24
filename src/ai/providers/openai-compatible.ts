@@ -66,24 +66,44 @@ export class OpenAICompatibleProvider implements AIProvider {
     request.signal?.addEventListener('abort', onAbort, { once: true });
 
     try {
-      const response = await fetchImpl(`${this.config.baseUrl.replace(/\/$/, '')}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          authorization: `Bearer ${this.config.apiKey}`,
-          'content-type': 'application/json',
-          accept: 'application/json',
-        },
-        body: JSON.stringify({
-          model: this.config.model,
-          messages: request.messages.map((m) => ({ role: m.role, content: m.content })),
-          temperature: request.temperature ?? 0.1,
-          max_tokens: request.maxTokens ?? 1200,
-          ...(request.json ? { response_format: { type: 'json_object' } } : {}),
-        }),
-        signal: controller.signal,
-      });
+      const post = async (useJson: boolean, tokenField: 'max_tokens' | 'max_completion_tokens') => {
+        return fetchImpl(`${this.config.baseUrl.replace(/\/$/, '')}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.config.apiKey}`,
+            authorization: `Bearer ${this.config.apiKey}`,
+            'content-type': 'application/json',
+            accept: 'application/json',
+            'user-agent': 'CodeSentinel',
+          },
+          body: JSON.stringify({
+            model: this.config.model,
+            messages: request.messages.map((m) => ({ role: m.role, content: m.content })),
+            temperature: request.temperature ?? 0.1,
+            [tokenField]: request.maxTokens ?? 1200,
+            ...(useJson ? { response_format: { type: 'json_object' } } : {}),
+          }),
+          signal: controller.signal,
+        });
+      };
 
-      const raw = await response.text();
+      let useJson = Boolean(request.json);
+      let tokenField: 'max_tokens' | 'max_completion_tokens' = 'max_tokens';
+      let response = await post(useJson, tokenField);
+      let raw = await response.text();
+
+      if (!response.ok && response.status === 400) {
+        const hint = `${extractError(raw)} ${raw}`.toLowerCase();
+        if (useJson && /response_format|json_object|json mode/i.test(hint)) {
+          useJson = false;
+          response = await post(useJson, tokenField);
+          raw = await response.text();
+        } else if (tokenField === 'max_tokens' && /max_completion_tokens|max_tokens/i.test(hint)) {
+          tokenField = 'max_completion_tokens';
+          response = await post(useJson, tokenField);
+          raw = await response.text();
+        }
+      }
 
       if (!response.ok) {
         /*

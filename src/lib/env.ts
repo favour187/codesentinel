@@ -15,6 +15,13 @@ const bool = (v: string | undefined, fallback = false): boolean => {
   return ['1', 'true', 'yes', 'on'].includes(v.toLowerCase());
 };
 
+/** Render / .env often wrap secrets in quotes. Those quotes become part of the key. */
+const secret = z
+  .string()
+  .optional()
+  .default('')
+  .transform((v) => v.trim().replace(/^['"]+|['"]+$/g, '').trim());
+
 const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   APP_URL: z.string().url().default('http://localhost:3000'),
@@ -29,26 +36,25 @@ const EnvSchema = z.object({
   SESSION_SECRET: z.string().min(16).default('dev-only-insecure-session-secret-change-me-please-32b'),
   ENCRYPTION_KEY: z.string().optional().default(''),
 
-  GITHUB_CLIENT_ID: z.string().optional().default(''),
-  GITHUB_CLIENT_SECRET: z.string().optional().default(''),
+  GITHUB_CLIENT_ID: secret,
+  GITHUB_CLIENT_SECRET: secret,
 
-  GITHUB_APP_ID: z.string().optional().default(''),
-  GITHUB_APP_SLUG: z.string().optional().default(''),
+  GITHUB_APP_ID: secret,
+  GITHUB_APP_SLUG: secret,
   GITHUB_APP_PRIVATE_KEY: z.string().optional().default(''),
   GITHUB_APP_PRIVATE_KEY_PATH: z.string().optional().default(''),
-  GITHUB_WEBHOOK_SECRET: z.string().optional().default(''),
+  GITHUB_WEBHOOK_SECRET: secret,
 
   /*
-   * AI providers. Featherless is primary and Groq is the fallback; either can
-   * be absent. When neither is configured the AI layer reports itself
-   * unavailable and every deterministic code path continues unchanged.
+   * AI providers. Groq first (fast, stable JSON), Featherless second.
+   * Either can be absent.
    */
-  FEATHERLESS_API_KEY: z.string().optional().default(''),
+  FEATHERLESS_API_KEY: secret,
   FEATHERLESS_MODEL: z.string().default('meta-llama/Meta-Llama-3.1-8B-Instruct'),
   FEATHERLESS_BASE_URL: z.string().url().default('https://api.featherless.ai/v1'),
 
-  GROQ_API_KEY: z.string().optional().default(''),
-  GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
+  GROQ_API_KEY: secret,
+  GROQ_MODEL: z.string().default('llama-3.1-8b-instant'),
   GROQ_BASE_URL: z.string().url().default('https://api.groq.com/openai/v1'),
 
   /** Hard ceiling on characters of repository evidence sent in one prompt. */

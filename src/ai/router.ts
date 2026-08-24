@@ -218,13 +218,19 @@ export async function runAITask<T extends z.ZodTypeAny>(
 
   log.error('AI task failed on every provider', { task: request.task, attempts: attempts.length });
 
+  const detail = attempts
+    .map((a) => a.error.replace(/Bearer\s+\S+/gi, 'Bearer [redacted]').slice(0, 180))
+    .join(' · ');
+
   return {
     ok: false,
     reason,
     message:
       reason === 'invalid'
         ? 'The AI response did not match the expected format.'
-        : 'No AI provider could be reached.',
+        : detail
+          ? `AI request failed: ${detail}`
+          : 'No AI provider could be reached.',
   };
 }
 
