@@ -70,12 +70,12 @@ export class OpenAICompatibleProvider implements AIProvider {
         return fetchImpl(`${this.config.baseUrl.replace(/\/$/, '')}/chat/completions`, {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${this.config.apiKey}`,
-            authorization: `Bearer ${this.config.apiKey}`,
-            'content-type': 'application/json',
-            accept: 'application/json',
-            'user-agent': 'CodeSentinel',
+            Authorization: `Bearer ${this.config.apiKey.trim()}`,
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'User-Agent': 'CodeSentinel',
           },
+          cache: 'no-store',
           body: JSON.stringify({
             model: this.config.model,
             messages: request.messages.map((m) => ({ role: m.role, content: m.content })),

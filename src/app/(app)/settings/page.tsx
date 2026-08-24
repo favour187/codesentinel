@@ -10,6 +10,7 @@ import { GitHubRepoPicker } from '@/components/dashboard/github-repo-picker';
 import { getCurrentUser } from '@/lib/auth/current-user';
 import { listRepositoriesForUser } from '@/lib/repositories';
 import { getFeatures } from '@/lib/env';
+import { probeAIProviders } from '@/lib/ai-status';
 import { getDbKind } from '@/db';
 import { timeAgo } from '@/lib/utils';
 
@@ -59,6 +60,7 @@ export default async function SettingsPage() {
   const features = getFeatures();
   const dbKind = getDbKind();
   const repos = await listRepositoriesForUser(user.id);
+  const ai = features.llm ? await probeAIProviders() : null;
 
   return (
     <>

@@ -15,12 +15,20 @@ const bool = (v: string | undefined, fallback = false): boolean => {
   return ['1', 'true', 'yes', 'on'].includes(v.toLowerCase());
 };
 
-/** Render / .env often wrap secrets in quotes. Those quotes become part of the key. */
-const secret = z
-  .string()
-  .optional()
-  .default('')
-  .transform((v) => v.trim().replace(/^['"]+|['"]+$/g, '').trim());
+/** Strip BOM, paired quotes, Bearer prefix, and invisible characters. Never log the result. */
+export function sanitizeSecret(raw: string): string {
+  let value = raw.replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '');
+  value = value.trim().replace(/^bearer\s+/i, '').trim();
+  if (
+    (value.startsWith('"') && value.endsWith('"') && value.length >= 2) ||
+    (value.startsWith("'") && value.endsWith("'") && value.length >= 2)
+  ) {
+    value = value.slice(1, -1).trim();
+  }
+  return value;
+}
+
+const secret = z.string().optional().default('').transform((v) => sanitizeSecret(v));
 
 const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),

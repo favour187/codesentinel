@@ -52,7 +52,7 @@ describe('OpenAICompatibleProvider', () => {
 
     const [url, init] = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
     expect(url).toBe('https://example.test/v1/chat/completions');
-    expect((init.headers as Record<string, string>).authorization).toBe('Bearer test-key');
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer test-key');
 
     const body = JSON.parse(init.body as string) as Record<string, unknown>;
     expect(body.model).toBe('test-model');

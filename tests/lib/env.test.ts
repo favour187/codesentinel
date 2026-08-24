@@ -39,9 +39,9 @@ describe('env validation', () => {
     expect(getFeatures().githubOAuth).toBe(true);
   });
 
-  it('strips wrapping quotes from API keys', () => {
+  it('strips wrapping quotes and Bearer prefix from API keys', () => {
     resetEnvCache();
-    process.env.GROQ_API_KEY = '"gsk-quoted-key"';
+    process.env.GROQ_API_KEY = '"Bearer gsk-quoted-key"';
     expect(getEnv().GROQ_API_KEY).toBe('gsk-quoted-key');
     expect(getFeatures().groq).toBe(true);
   });
