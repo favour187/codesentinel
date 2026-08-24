@@ -46,6 +46,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "tailwind-merge": "^3.6.0",
+    "typescript": "^5.9.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -63,7 +64,6 @@
     "postcss": "^8.5.26",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.12",
-    "typescript": "^5.9.3",
     "vitest": "^4.1.11"
   },
   "private": true,

@@ -95,6 +95,61 @@ export type MemoryKind = (typeof MEMORY_KINDS)[number];
 export const AI_REQUEST_STATUSES = ['ok', 'failed', 'unavailable', 'cached'] as const;
 export type AIRequestStatus = (typeof AI_REQUEST_STATUSES)[number];
 
+/* -------------------------------------------------------------------------- */
+/* Digital twin unions (Phase 5)                                              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Symbol kinds the extensible parser layer can emit.
+ *
+ * Deliberately small and language-neutral: every supported language maps its
+ * own concepts onto these, so a consumer never has to branch on language.
+ */
+export const SYMBOL_KINDS = [
+  'function',
+  'class',
+  'method',
+  'interface',
+  'type',
+  'variable',
+  'route',
+  'test',
+] as const;
+export type SymbolKind = (typeof SYMBOL_KINDS)[number];
+
+/**
+ * Relationship types in the codebase graph.
+ *
+ * Only relationships that can be derived from static evidence are ever
+ * written. `calls` in particular is emitted only where a call expression
+ * resolves to a symbol exported by a file this module actually imports —
+ * an unresolved call is dropped rather than guessed at.
+ */
+export const EDGE_TYPES = [
+  'imports',
+  'calls',
+  'depends_on',
+  'tests',
+  'exposes_api',
+  'uses_database',
+  'contains_finding',
+] as const;
+export type EdgeType = (typeof EDGE_TYPES)[number];
+
+/** How confident the extractor is that an edge is real. */
+export const EDGE_CONFIDENCE = ['certain', 'probable'] as const;
+export type EdgeConfidence = (typeof EDGE_CONFIDENCE)[number];
+
+/**
+ * Lifecycle of a generated test.
+ *
+ * `passed` is reachable ONLY by actually executing the test. Generation puts a
+ * test in `generated`; anything not executed stays `not_run`. Nothing in the
+ * codebase is permitted to write `passed` from a model response.
+ */
+export const GENERATED_TEST_STATUSES = ['generated', 'running', 'passed', 'failed', 'not_run'] as const;
+export type GeneratedTestStatus = (typeof GENERATED_TEST_STATUSES)[number];
+
 const timestamps = {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -596,6 +651,202 @@ export const repositoryMemory = pgTable(
     ...timestamps,
   },
   (t) => [index('repository_memory_repo_idx').on(t.repositoryId, t.kind)],
+);
+
+/* -------------------------------------------------------------------------- */
+/* Digital twin: symbols, graph edges, components, index state (Phase 5)      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Symbols extracted from source by the language parsers.
+ *
+ * One row per declaration that is worth reasoning about — functions, classes,
+ * methods, exported types, detected routes. Bodies are NOT stored: the twin
+ * records where a symbol lives and what shape it has, and reads the actual
+ * source from disk on demand. Storing bodies would duplicate the repository
+ * into the database and turn every re-index into a large write.
+ */
+export const symbols = pgTable(
+  'symbols',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    repositoryId: uuid('repository_id')
+      .notNull()
+      .references(() => repositories.id, { onDelete: 'cascade' }),
+    /** Owning file path (repository-relative, POSIX). */
+    filePath: text('file_path').notNull(),
+    name: text('name').notNull(),
+    kind: text('kind').$type<SymbolKind>().notNull(),
+    lineStart: integer('line_start').notNull().default(0),
+    lineEnd: integer('line_end').notNull().default(0),
+    isExported: boolean('is_exported').notNull().default(false),
+    isAsync: boolean('is_async').notNull().default(false),
+    /** Parameter names in declaration order — enough to generate a test call. */
+    parameters: jsonb('parameters').$type<string[]>().notNull().default([]),
+    /** Declaring class/interface for methods, else null. */
+    parentName: text('parent_name'),
+    /** Branching constructs inside the symbol — drives test-gap scenarios. */
+    complexity: integer('complexity').notNull().default(0),
+    /** Signature text, already stripped of the body. */
+    signature: text('signature'),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [
+    index('symbols_repo_file_idx').on(t.repositoryId, t.filePath),
+    index('symbols_repo_name_idx').on(t.repositoryId, t.name),
+    index('symbols_repo_kind_idx').on(t.repositoryId, t.kind),
+  ],
+);
+
+/**
+ * Edges of the codebase graph.
+ *
+ * Endpoints are stored as opaque string keys (a file path, a `path#symbol`
+ * reference, a dependency name, a component id) rather than foreign keys,
+ * because an edge can point at a node type that has no table of its own —
+ * and because a path survives a re-index while a row id does not.
+ *
+ * `evidence` carries the reason the edge exists (the import specifier, the
+ * matched route literal, the call site line). Every edge shown in the UI can
+ * therefore be justified, which is what keeps "never invent relationships"
+ * enforceable rather than aspirational.
+ */
+export const codeEdges = pgTable(
+  'code_edges',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    repositoryId: uuid('repository_id')
+      .notNull()
+      .references(() => repositories.id, { onDelete: 'cascade' }),
+    type: text('type').$type<EdgeType>().notNull(),
+    fromKey: text('from_key').notNull(),
+    toKey: text('to_key').notNull(),
+    confidence: text('confidence').$type<EdgeConfidence>().notNull().default('certain'),
+    /** Why this edge exists — specifier, matched literal, or call site. */
+    evidence: text('evidence'),
+    lineNumber: integer('line_number'),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [
+    uniqueIndex('code_edges_unique_idx').on(t.repositoryId, t.type, t.fromKey, t.toKey),
+    index('code_edges_from_idx').on(t.repositoryId, t.fromKey, t.type),
+    index('code_edges_to_idx').on(t.repositoryId, t.toKey, t.type),
+  ],
+);
+
+/**
+ * Logical components — groups of files that belong together.
+ *
+ * Derived from directory structure and file role, not hand-maintained. The
+ * architecture map renders components rather than files: a few dozen labelled
+ * boxes are readable, several hundred file nodes are not.
+ */
+export const components = pgTable(
+  'components',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    repositoryId: uuid('repository_id')
+      .notNull()
+      .references(() => repositories.id, { onDelete: 'cascade' }),
+    /** Stable slug, e.g. "src-services-auth". Referenced by code_edges keys. */
+    key: text('key').notNull(),
+    name: text('name').notNull(),
+    /** Architectural layer: Frontend | API | Services | Data | Tests | Config | Other. */
+    layer: text('layer').notNull().default('Other'),
+    /** Directory prefix this component owns. */
+    rootPath: text('root_path').notNull(),
+    filePaths: jsonb('file_paths').$type<string[]>().notNull().default([]),
+    fileCount: integer('file_count').notNull().default(0),
+    loc: integer('loc').notNull().default(0),
+    /** Denormalized counters — see docs/digital-twin.md for the formula. */
+    dependencyCount: integer('dependency_count').notNull().default(0),
+    dependentCount: integer('dependent_count').notNull().default(0),
+    findingCount: integer('finding_count').notNull().default(0),
+    criticalCount: integer('critical_count').notNull().default(0),
+    testCount: integer('test_count').notNull().default(0),
+    /** Files in this component that no test reaches. */
+    untestedFiles: integer('untested_files').notNull().default(0),
+    /** 30-day commit touches across the component's files. */
+    changeFrequency: integer('change_frequency').notNull().default(0),
+    /** True when the component handles auth, payments, crypto or raw SQL. */
+    securitySensitive: boolean('security_sensitive').notNull().default(false),
+    riskScore: real('risk_score').notNull().default(0),
+    /** low | medium | high | critical — banded from riskScore. */
+    riskLevel: text('risk_level').notNull().default('low'),
+    /** Per-factor breakdown so the heatmap can explain every number. */
+    riskFactors: jsonb('risk_factors')
+      .$type<Array<{ label: string; points: number; detail: string }>>()
+      .notNull()
+      .default([]),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [
+    uniqueIndex('components_repo_key_idx').on(t.repositoryId, t.key),
+    index('components_repo_risk_idx').on(t.repositoryId, t.riskScore),
+  ],
+);
+
+/**
+ * Per-file index state — the incremental indexing ledger.
+ *
+ * Holds the content hash the twin was last built from. A re-index compares
+ * hashes and only reparses what changed, so an unchanged repository costs a
+ * hash comparison per file instead of a full AST pass.
+ */
+export const indexState = pgTable(
+  'index_state',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    repositoryId: uuid('repository_id')
+      .notNull()
+      .references(() => repositories.id, { onDelete: 'cascade' }),
+    filePath: text('file_path').notNull(),
+    contentHash: text('content_hash').notNull(),
+    language: text('language'),
+    symbolCount: integer('symbol_count').notNull().default(0),
+    edgeCount: integer('edge_count').notNull().default(0),
+    /** Wall-clock cost of parsing this file, for performance reporting. */
+    parseMs: integer('parse_ms').notNull().default(0),
+    indexedAt: timestamp('indexed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('index_state_repo_path_idx').on(t.repositoryId, t.filePath)],
+);
+
+/**
+ * Regression memory: finding → fix → the test that proves it stays fixed.
+ *
+ * Written when a fix is applied, read when a new finding resembles an old one
+ * ("this looks like something you already fixed"). The rule id plus a
+ * normalized signature is what makes the resemblance check deterministic
+ * rather than a vibe from an LLM.
+ */
+export const regressionMemory = pgTable(
+  'regression_memory',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    repositoryId: uuid('repository_id')
+      .notNull()
+      .references(() => repositories.id, { onDelete: 'cascade' }),
+    findingId: uuid('finding_id').references(() => findings.id, { onDelete: 'set null' }),
+    fixId: uuid('fix_id').references(() => fixes.id, { onDelete: 'set null' }),
+    ruleId: text('rule_id').notNull(),
+    filePath: text('file_path'),
+    /** Normalized shape of the original finding, for similarity matching. */
+    signature: text('signature').notNull(),
+    title: text('title').notNull(),
+    /** The regression test source, if one was generated and kept. */
+    testCode: text('test_code'),
+    testPath: text('test_path'),
+    testFramework: text('test_framework'),
+    /** generated | running | passed | failed | not_run */
+    testStatus: text('test_status').$type<GeneratedTestStatus>().notNull().default('not_run'),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    index('regression_memory_repo_rule_idx').on(t.repositoryId, t.ruleId),
+    index('regression_memory_repo_idx').on(t.repositoryId),
+  ],
 );
 
 /** Team access control. */

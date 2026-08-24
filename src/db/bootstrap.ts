@@ -375,6 +375,100 @@ CREATE TABLE IF NOT EXISTS repository_memory (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS repository_memory_repo_idx ON repository_memory (repository_id, kind);
+
+CREATE TABLE IF NOT EXISTS symbols (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  repository_id uuid NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
+  file_path text NOT NULL,
+  name text NOT NULL,
+  kind text NOT NULL,
+  line_start integer NOT NULL DEFAULT 0,
+  line_end integer NOT NULL DEFAULT 0,
+  is_exported boolean NOT NULL DEFAULT false,
+  is_async boolean NOT NULL DEFAULT false,
+  parameters jsonb NOT NULL DEFAULT '[]'::jsonb,
+  parent_name text,
+  complexity integer NOT NULL DEFAULT 0,
+  signature text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS symbols_repo_file_idx ON symbols (repository_id, file_path);
+CREATE INDEX IF NOT EXISTS symbols_repo_name_idx ON symbols (repository_id, name);
+CREATE INDEX IF NOT EXISTS symbols_repo_kind_idx ON symbols (repository_id, kind);
+
+CREATE TABLE IF NOT EXISTS code_edges (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  repository_id uuid NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
+  type text NOT NULL,
+  from_key text NOT NULL,
+  to_key text NOT NULL,
+  confidence text NOT NULL DEFAULT 'certain',
+  evidence text,
+  line_number integer,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS code_edges_unique_idx ON code_edges (repository_id, type, from_key, to_key);
+CREATE INDEX IF NOT EXISTS code_edges_from_idx ON code_edges (repository_id, from_key, type);
+CREATE INDEX IF NOT EXISTS code_edges_to_idx ON code_edges (repository_id, to_key, type);
+
+CREATE TABLE IF NOT EXISTS components (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  repository_id uuid NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
+  key text NOT NULL,
+  name text NOT NULL,
+  layer text NOT NULL DEFAULT 'Other',
+  root_path text NOT NULL,
+  file_paths jsonb NOT NULL DEFAULT '[]'::jsonb,
+  file_count integer NOT NULL DEFAULT 0,
+  loc integer NOT NULL DEFAULT 0,
+  dependency_count integer NOT NULL DEFAULT 0,
+  dependent_count integer NOT NULL DEFAULT 0,
+  finding_count integer NOT NULL DEFAULT 0,
+  critical_count integer NOT NULL DEFAULT 0,
+  test_count integer NOT NULL DEFAULT 0,
+  untested_files integer NOT NULL DEFAULT 0,
+  change_frequency integer NOT NULL DEFAULT 0,
+  security_sensitive boolean NOT NULL DEFAULT false,
+  risk_score real NOT NULL DEFAULT 0,
+  risk_level text NOT NULL DEFAULT 'low',
+  risk_factors jsonb NOT NULL DEFAULT '[]'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS components_repo_key_idx ON components (repository_id, key);
+CREATE INDEX IF NOT EXISTS components_repo_risk_idx ON components (repository_id, risk_score);
+
+CREATE TABLE IF NOT EXISTS index_state (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  repository_id uuid NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
+  file_path text NOT NULL,
+  content_hash text NOT NULL,
+  language text,
+  symbol_count integer NOT NULL DEFAULT 0,
+  edge_count integer NOT NULL DEFAULT 0,
+  parse_ms integer NOT NULL DEFAULT 0,
+  indexed_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS index_state_repo_path_idx ON index_state (repository_id, file_path);
+
+CREATE TABLE IF NOT EXISTS regression_memory (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  repository_id uuid NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
+  finding_id uuid REFERENCES findings(id) ON DELETE SET NULL,
+  fix_id uuid REFERENCES fixes(id) ON DELETE SET NULL,
+  rule_id text NOT NULL,
+  file_path text,
+  signature text NOT NULL,
+  title text NOT NULL,
+  test_code text,
+  test_path text,
+  test_framework text,
+  test_status text NOT NULL DEFAULT 'not_run',
+  resolved_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS regression_memory_repo_rule_idx ON regression_memory (repository_id, rule_id);
+CREATE INDEX IF NOT EXISTS regression_memory_repo_idx ON regression_memory (repository_id);
 `;
 
 /** All table names, in dependency order (useful for tests / teardown). */
@@ -398,6 +492,11 @@ export const TABLE_NAMES = [
   'scan_jobs',
   'ai_requests',
   'repository_memory',
+  'symbols',
+  'code_edges',
+  'components',
+  'index_state',
+  'regression_memory',
 ] as const;
 
 export async function bootstrapSchema(database: Database): Promise<void> {
