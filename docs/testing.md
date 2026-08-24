@@ -12,7 +12,7 @@ npx vitest run tests/lib/http.test.ts    # a single file
 
 ## Current suite
 
-**413 tests across 25 files**, all passing.
+**400+ tests**, including Phase 6 codebase search and dependency inventory.
 
 ### Platform
 

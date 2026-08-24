@@ -67,6 +67,7 @@ Pure-ish modules with no React dependency, unit-testable in isolation.
 | `auth/` | Sessions, OAuth flow, current-user resolution, access control. |
 | `repositories.ts` | Repository listing, resolution, per-repository policy. |
 | `analysis-queries.ts` | Read models for the dashboard. |
+| `codebase-queries.ts` | Architecture, package inventory and search index. |
 | `guardian-queries.ts` | Read models for the Guardian page — one query per panel, no N+1. |
 | `demo/` | Demo fixture location and identity. |
 

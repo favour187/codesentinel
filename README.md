@@ -20,9 +20,9 @@ and verified.** Every phase ends with four gates: `tsc`, `eslint`, `vitest`, `ne
 | 1 | Project structure, database, auth, GitHub connection, base UI | **Done** |
 | 2 | Scanner engine, findings pipeline, health scoring | **Done** |
 | 3 | Guardian: webhooks, PR/push scanning, checks, PR comments, scan queue | **Done** |
-| 4 | Analysis, Codebase and Fix Center pages built on the stored findings | Next |
-| 5 | Repository-grounded AI explanations and fix suggestions | Planned |
-| 6 | Test intelligence, dependency and architecture maps | Planned |
+| 4 | Analysis, Codebase and Fix Center pages built on the stored findings | **Done** (engine + Fix Center) |
+| 5 | Repository-grounded AI explanations and digital twin | **Done** |
+| 6 | Test intelligence, dependency and architecture maps | **Done** |
 | 7 | Insights, trends, blast-radius UI | Planned |
 | 8 | Polish, hardening, deployment | Planned |
 
@@ -51,10 +51,9 @@ them. They never show invented metrics.
 
 ### What does not work yet
 
-The Analysis, Codebase, Testing, Fix Center, Insights and Team pages are still placeholders.
-Findings are detected, scored, stored and reported to GitHub, but the in-app explorer for
-browsing them file by file arrives in Phase 4. AI explanation is Phase 5; without an LLM key
-every deterministic scanner still runs at full strength.
+The Analysis, Insights and Team pages may still be thin compared with Testing and Codebase.
+Phase 6 surfaces real test gaps, package advisories and the architecture map from the
+digital twin. Without an LLM key every deterministic scanner still runs at full strength.
 
 ---
 
