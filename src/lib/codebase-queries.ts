@@ -10,6 +10,11 @@ import type { SearchDocument } from '@/lib/codebase-search';
 export type { SearchDocument, SearchHit } from '@/lib/codebase-search';
 export { searchDocuments } from '@/lib/codebase-search';
 
+/** Fixture / test trees are scanned for findings, but they are not this app's API or schema. */
+function isSupportPath(filePath: string): boolean {
+  return /(?:^|\/)(fixtures|tests|node_modules|\.next|dist|coverage)(?:\/|$)/.test(filePath);
+}
+
 /**
  * Read models for the Codebase page: architecture, package inventory, API map,
  * and in-repo search. Every number comes from the latest completed scan or the
@@ -53,6 +58,7 @@ export async function getDependencyInventory(repositoryId: string): Promise<Depe
   const rows = await database.select().from(dependencies).where(eq(dependencies.scanId, scanId));
 
   const packages: PackageDependency[] = rows
+    .filter((r) => !r.manifestPath || !isSupportPath(r.manifestPath))
     .map((r) => ({
       name: r.name,
       ecosystem: r.ecosystem,
@@ -102,7 +108,7 @@ export async function getArchitectureOverview(repositoryId: string): Promise<Arc
     : 0;
 
   const allSymbols = scanId ? await loadSymbols(repositoryId) : [];
-  const filesForRoutes = graph.files();
+  const filesForRoutes = graph.files().filter((p) => !isSupportPath(p));
 
   const byLayer = new Map<Layer, ComponentSummary[]>();
   for (const layer of LAYERS) byLayer.set(layer, []);
@@ -121,8 +127,37 @@ export async function getArchitectureOverview(repositoryId: string): Promise<Arc
     })).filter((row) => row.components.length > 0),
     edges,
     routes: graph.routesOf(filesForRoutes),
-    databases: graph.databasesOf(filesForRoutes),
+    databases: dedupeDatabaseTargets(graph.databasesOf(filesForRoutes)),
   };
+}
+
+/** Fixture / test trees are scanned for findings, but they are not this app's API or schema. */
+function isSupportPath(filePath: string): boolean {
+  return /(?:^|\/)(fixtures|tests|node_modules|\.next|dist|coverage)(?:\/|$)/.test(filePath);
+}
+
+function dedupeDatabaseTargets(
+  rows: Array<{ target: string; filePath: string; evidence: string | null }>,
+): Array<{ target: string; filePath: string; evidence: string | null }> {
+  const named = new Map<string, { target: string; filePath: string; evidence: string | null }>();
+  let unnamed = 0;
+  for (const row of rows) {
+    const target = row.target.trim();
+    if (!target || target === '(unknown)') {
+      unnamed += 1;
+      continue;
+    }
+    if (!named.has(target)) named.set(target, row);
+  }
+  const out = [...named.values()].sort((a, b) => a.target.localeCompare(b.target));
+  if (unnamed > 0) {
+    out.push({
+      target: `${unnamed} unnamed client import${unnamed === 1 ? '' : 's'}`,
+      filePath: '',
+      evidence: 'ORM/client import without a table name',
+    });
+  }
+  return out;
 }
 
 export async function getSearchIndex(repositoryId: string): Promise<SearchDocument[]> {

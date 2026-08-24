@@ -220,9 +220,20 @@ export default async function CodebasePage() {
           ) : null}
 
           {architecture.databases.length > 0 ? (
-            <p className="mt-6 text-xs text-[hsl(var(--muted-foreground))]">
-              Database targets detected: {architecture.databases.map((d) => d.target).join(', ')}.
-            </p>
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Database targets</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="flex flex-wrap gap-2">
+                  {architecture.databases.map((d) => (
+                    <li key={`${d.target}:${d.filePath}`}>
+                      <Badge variant="outline">{d.target}</Badge>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
           ) : null}
         </>
       )}
