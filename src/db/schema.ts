@@ -53,7 +53,13 @@ export type ScanStatus = (typeof SCAN_STATUSES)[number];
 
 /**
  * Finding lifecycle.
- *  - open           present in the latest scan
+ *  - open           present in the latest scan of the tracked branch
+ *  - proposed       observed on a pull request head, i.e. on a change that has
+ *                   not been merged. Kept out of every repository-level `open`
+ *                   query on purpose: a proposed branch must never alter the
+ *                   tracked branch's health score or finding list. The owning
+ *                   scan row carries the `pull_request_id`, so these rows are
+ *                   still fully attributable (and addressable by the fix engine).
  *  - superseded     still reproduces, but a newer scan owns the live row
  *  - resolved       no longer reproduces (genuinely fixed)
  *  - ignored        deliberately accepted by a maintainer
@@ -61,6 +67,7 @@ export type ScanStatus = (typeof SCAN_STATUSES)[number];
  */
 export const FINDING_STATUSES = [
   'open',
+  'proposed',
   'superseded',
   'resolved',
   'ignored',

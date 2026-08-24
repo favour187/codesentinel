@@ -1,6 +1,6 @@
 import { and, desc, eq } from 'drizzle-orm';
 import { getDb } from '@/db';
-import { commits, pullRequests, scans } from '@/db/schema';
+import { commits, findings, pullRequests, scans } from '@/db/schema';
 import { executeScan } from '@/scanner/persistence';
 import { runScan } from '@/scanner/orchestrator';
 import type { ScanResult } from '@/scanner/orchestrator';
@@ -205,7 +205,9 @@ export async function scanPullRequest(options: PullRequestScanOptions): Promise<
     truncatedDiff: truncated,
   });
 
-  /* 5. Persist the scan + risk. */
+  /* 5. Persist the scan + findings + risk. */
+  await persistPullRequestFindings(scanId, repository.id, headResult, basePrints);
+
   await db
     .update(scans)
     .set({
@@ -280,6 +282,71 @@ export async function scanPullRequest(options: PullRequestScanOptions): Promise<
 /* -------------------------------------------------------------------------- */
 
 /**
+ * Store the findings observed on a pull request head.
+ *
+ * These rows are written with status `proposed`, never `open`, and they never
+ * retire the tracked branch's rows. That single distinction is what lets a PR
+ * scan be fully persisted without letting an unmerged branch move the
+ * repository's health score or leak into the repository finding list.
+ *
+ * Persisting them at all matters for three reasons: the Guardian dashboard
+ * reports a real per-PR finding count, a maintainer can open a PR finding and
+ * act on it, and anything that needs a durable finding id (the fix engine,
+ * explanations, triage) has one.
+ *
+ * `firstSeenOnBase` marks findings the PR inherited rather than introduced, so
+ * the UI can separate "this PR did this" from "this was already broken"
+ * without recomputing the diff.
+ */
+async function persistPullRequestFindings(
+  scanId: string,
+  repositoryId: string,
+  result: ScanResult,
+  basePrints: ReadonlySet<string>,
+): Promise<void> {
+  if (result.findings.length === 0) return;
+  const db = await getDb();
+
+  const CHUNK = 200;
+  for (let i = 0; i < result.findings.length; i += CHUNK) {
+    const chunk = result.findings.slice(i, i + CHUNK);
+    await db.insert(findings).values(
+      chunk.map((finding) => ({
+        scanId,
+        repositoryId,
+        fingerprint: finding.fingerprint,
+        ruleId: finding.ruleId,
+        scannerId: finding.scannerId,
+        severity: finding.severity,
+        category: finding.category,
+        status: 'proposed' as const,
+        title: finding.title,
+        description: finding.description,
+        filePath: finding.filePath,
+        lineStart: finding.lineStart,
+        lineEnd: finding.lineEnd,
+        evidence: finding.evidence,
+        confidence: finding.confidence,
+        whyItMatters: finding.whyItMatters,
+        remediation: finding.remediation,
+        references: finding.references,
+        relatedTests: finding.relatedTests,
+        metadata: {
+          ...finding.metadata,
+          firstSeenOnBase: basePrints.has(finding.fingerprint),
+        },
+      })),
+    );
+  }
+
+  log.debug('Persisted pull request findings', {
+    scanId,
+    findings: result.findings.length,
+    introduced: result.findings.filter((f) => !basePrints.has(f.fingerprint)).length,
+  });
+}
+
+/**
  * Findings for the base commit.
  *
  * Scanning the base on every PR event would double the work, so a completed
@@ -302,11 +369,10 @@ async function resolveBaseFindings(
 
   const cachedScan = cached[0];
   if (cachedScan) {
-    const { findings: findingsTable } = await import('@/db/schema');
     const rows = await db
-      .select({ fingerprint: findingsTable.fingerprint })
-      .from(findingsTable)
-      .where(eq(findingsTable.scanId, cachedScan.id));
+      .select({ fingerprint: findings.fingerprint })
+      .from(findings)
+      .where(eq(findings.scanId, cachedScan.id));
     log.debug('Reused cached base scan', { baseSha, scanId: cachedScan.id, findings: rows.length });
     return rows.map((row) => ({ fingerprint: row.fingerprint }) as Finding);
   }
