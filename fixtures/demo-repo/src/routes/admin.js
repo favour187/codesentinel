@@ -4,9 +4,14 @@
 const { exec, execSync } = require('child_process');
 const fs = require('fs');
 const express = require('express');
+const { requireAdmin } = require('../auth/permissions');
 const router = express.Router();
 
 router.post('/backup', (req, res) => {
+  // Fail-open permission check: see auth/permissions.js
+  if (!requireAdmin(req.headers['x-session-id'])) {
+    return res.status(403).send('forbidden');
+  }
   const name = req.body.name;
   // Command injection: unsanitised user input in a shell command
   exec('tar -czf /backups/' + name + '.tar.gz /data', (err, stdout) => {

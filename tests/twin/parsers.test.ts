@@ -48,8 +48,8 @@ describe('typescript/javascript parser', () => {
     expect(login?.kind).toBe('function');
     expect(login?.parameters).toEqual(['req', 'res']);
     expect(login?.lineStart).toBeLessThan(login?.lineEnd ?? 0);
-    // One `if` in the body.
-    expect(login?.complexity).toBe(1);
+    // One `if` plus the `||` fallback on the role, so two decision points.
+    expect(login?.complexity).toBe(2);
   });
 
   it('does not record function-local variables as symbols', () => {
@@ -63,7 +63,12 @@ describe('typescript/javascript parser', () => {
   it('treats require bindings as imports, not as symbols or calls', () => {
     const parsed = parseFile('src/routes/auth.js', fixture('src/routes/auth.js'), 'javascript');
 
-    expect(parsed.imports.map((i) => i.specifier)).toEqual(['crypto', 'jsonwebtoken', '../lib/config']);
+    expect(parsed.imports.map((i) => i.specifier)).toEqual([
+      'crypto',
+      'jsonwebtoken',
+      '../lib/config',
+      '../auth/session',
+    ]);
     const config = parsed.imports.find((i) => i.specifier === '../lib/config');
     expect(config?.isRelative).toBe(true);
     expect(config?.imported).toContain('JWT_SECRET');
@@ -159,6 +164,43 @@ const user = await prisma.user.findMany();
     const sql = parsed.databaseUses.find((u) => u.via === 'sql');
     expect(sql?.target).toBe('accounts');
     expect(sql?.evidence).toContain('SELECT');
+  });
+
+  it('does not mistake non-database methods that share ORM member names', () => {
+    /*
+     * Regression: `crypto.createHash('md5').update(x)` was recorded as a
+     * database write because `update` is an ORM member name. An invented
+     * relationship is worse than a missing one.
+     */
+    const source = `
+const crypto = require('crypto');
+function sign(payload) {
+  return crypto.createHash('md5').update(payload).digest('hex');
+}
+function bump(el) {
+  el.classList.update();
+  chart.update();
+  return state.query();
+}
+`;
+    const parsed = parseFile('src/hash.js', source, 'javascript');
+    expect(parsed.databaseUses).toEqual([]);
+  });
+
+  it('still records ambiguous ORM members when the receiver is a database handle', () => {
+    const source = `
+const db = require('./db');
+async function save(row) {
+  await db.update(row);
+  await connection.query('ping');
+  await prisma.user.findUnique({ where: { id: 1 } });
+}
+`;
+    const parsed = parseFile('src/save.js', source, 'javascript');
+    const evidence = parsed.databaseUses.map((u) => u.evidence).join(' | ');
+    expect(evidence).toContain('db.update');
+    expect(evidence).toContain('connection.query');
+    expect(evidence).toContain('findUnique');
   });
 
   it('degrades gracefully on malformed source', () => {

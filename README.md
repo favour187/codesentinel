@@ -37,10 +37,10 @@ them. They never show invented metrics.
 
 - Email-free **demo workspace** — one click, no GitHub account required.
 - **GitHub OAuth** sign-in and **GitHub App** installation (when credentials are configured).
-- **PostgreSQL schema** of 17 tables, created identically in dev and production.
+- **PostgreSQL schema** of 24 tables, created identically in dev and production.
 - **Six deterministic scanners** — secrets, security, code quality, dependencies, test
   coverage, infrastructure — that read real files on disk. On the bundled fixture they find
-  **37 genuine issues across 11 files**.
+  **42 genuine issues across 16 files**.
 - **Health scoring** across six dimensions with an explicit severity gate: a repository with
   a critical finding is labelled *At risk* regardless of its numeric score.
 - **Overview dashboard** answering "is this repository safe and healthy?" above the fold.

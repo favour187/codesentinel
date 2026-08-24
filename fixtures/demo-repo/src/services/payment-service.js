@@ -29,4 +29,9 @@ function calculateRefund(order) {
   return refund - order.shippingFee;
 }
 
-module.exports = { chargeCustomer, applyDiscount, calculateRefund };
+function formatAmount(amountUsd) {
+  // Floating-point money formatting: rounds inconsistently on .005 boundaries
+  return '$' + (Math.round(amountUsd * 100) / 100).toFixed(2);
+}
+
+module.exports = { chargeCustomer, applyDiscount, calculateRefund, formatAmount };

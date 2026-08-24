@@ -23,7 +23,7 @@ The demo user can only ever see repositories with `source = 'demo'`.
 ## The fixture
 
 [`fixtures/demo-repo/`](../fixtures/demo-repo) is a small, deliberately insecure Node.js
-service — 11 files, 209 scannable lines. It is ordinary source code on disk, and scanners parse
+service — 16 files, 329 scannable lines. It is ordinary source code on disk, and scanners parse
 it exactly as they would parse a cloned repository.
 
 ```
@@ -36,6 +36,12 @@ fixtures/demo-repo/
 │   │   ├── config.js      hardcoded AWS, Stripe, JWT and database credentials
 │   │   ├── db.js          benign stub — keeps the module graph coherent, plants nothing
 │   │   └── utils.js       deep nesting, prototype pollution, unused variable
+│   ├── auth/
+│   │   ├── session.js     predictable session ids, no expiry, unbounded store
+│   │   └── permissions.js fail-open access control (CWE-285)
+│   ├── frontend/
+│   │   ├── login-form.js  innerHTML XSS sink (CWE-79)
+│   │   └── dashboard.js   XSS sink, depends on auth + user + payment services
 │   ├── routes/
 │   │   ├── admin.js       command injection via exec/execSync, path traversal
 │   │   └── auth.js        jwt.decode without verification, alg:'none', timing-unsafe compare
@@ -43,8 +49,13 @@ fixtures/demo-repo/
 │       ├── user-service.js     SQL injection (3 sites), swallowed catch, unchecked property access
 │       └── payment-service.js  float currency arithmetic, missing bounds check, no test coverage
 └── tests/
-    └── utils.test.js      partial coverage — deliberately incomplete
+    ├── utils.test.js      partial coverage — deliberately incomplete
+    └── session.test.js    covers createSession/getSession only; the rest is a planted gap
 ```
+
+The `auth/` and `frontend/` layers exist for the Phase 5 Digital Twin: `session.js` is imported
+by routes, permissions and (transitively) the frontend, so it has a genuinely large blast radius,
+and the graph has enough depth for component grouping to mean something.
 
 Every one of those problems is genuinely present in the code. They are the acceptance criteria
 for the Phase 2 scanners: a rule that cannot find its planted case in this fixture is not
@@ -55,27 +66,27 @@ as a negative control: a scanner that reports a finding there is producing a fal
 
 ### Current baseline
 
-Scanning the fixture with all six Phase 2 scanners produces **37 findings** after
+Scanning the fixture with all six Phase 2 scanners produces **42 findings** after
 cross-scanner deduplication:
 
 | Severity | Count |
 | -------- | ----- |
-| Critical | 15 |
-| High | 12 |
+| Critical | 16 |
+| High | 16 |
 | Medium | 7 |
 | Low | 1 |
 | Info | 2 |
 
 | Dimension | Score |
 | --------- | ----- |
-| Health | 48.5 |
-| Security | 5.3 |
+| Health | 46.6 |
+| Security | 4.9 |
 | Reliability | 69.4 |
 | Quality | 83.7 |
-| Testing | 45.0 |
+| Testing | 32.9 |
 | Performance | 100.0 |
 
-Estimated remediation debt: **91.8 hours**. The fixture grades **At risk** — with 15 unresolved
+Estimated remediation debt: **91.8 hours**. The fixture grades **At risk** — with 16 unresolved
 critical findings, `scoreGrade` refuses a passing verdict regardless of the numeric health value.
 
 Findings by category: security 12, secrets 6, infrastructure 5, dependencies 5, testing 3,
@@ -103,13 +114,17 @@ walkthrough behaves as follows:
 
 | Scan | Change | Findings | Health | Security | Delta |
 | ---- | ------ | -------- | ------ | -------- | ----- |
-| 1 | Baseline fixture | 37 | 48.5 | 5.3 | — (37 introduced) |
+| 1 | Baseline fixture (11-file version) | 37 | 48.5 | 5.3 | — (37 introduced) |
 | 2 | Fix `eval()` in `admin.js` and `algorithm:'none'` in `auth.js` | 35 | 48.7 | 5.9 | **+0.2** (2 resolved) |
 | 3 | Add `danger.js` with `exec('ping -c 1 ' + req.query.host)` | 36 | 48.6 | 5.6 | **−0.1** (1 introduced) |
 
+> These three rows were measured against the original 11-file fixture. Phase 5 extended the
+> fixture to 16 files (baseline now 42 findings / health 46.6), so the absolute numbers differ;
+> the delta behaviour they demonstrate is unchanged.
+
 The deltas are small because the fixture is already deeply unhealthy — the scoring curve
 saturates, so two fixes in a 37-finding repository genuinely are a marginal improvement. That is
-the honest result, not a bug. Steps 4–6 depend on the Phase 5 AI layer.
+the honest result, not a bug.
 
 Each step is driven by the same code paths that a real repository uses. Demo mode changes the
 *source* of the code being scanned, not the machinery scanning it.

@@ -12,6 +12,7 @@ import {
   type ScanStatus,
 } from '@/db/schema';
 import { createLogger } from '@/lib/logger';
+import { indexRepository } from '@/twin/indexer';
 import { runScan, type RunScanOptions, type ScanResult } from './orchestrator';
 import { parseManifests } from './scanners/dependencies';
 import {
@@ -104,6 +105,33 @@ export async function executeScan(options: ExecuteScanOptions): Promise<Executed
 
     await persistFindings(scanId, options.repositoryId, result, delta);
     await persistRepositoryIntelligence(scanId, options.repositoryId, result);
+
+    /*
+     * The Digital Twin indexes the same file set the scanners just read, so
+     * indexing costs no extra disk I/O and stays consistent with the findings
+     * from this scan. It is incremental: unchanged files are skipped on the
+     * hash comparison alone.
+     *
+     * A twin failure must never fail the scan — findings are the product,
+     * the graph is an enrichment. We log and carry on.
+     */
+    try {
+      const indexed = await indexRepository(options.repositoryId, result.files);
+      log.info('Digital twin indexed', {
+        scanId,
+        parsed: indexed.filesParsed,
+        unchanged: indexed.filesUnchanged,
+        removed: indexed.filesRemoved,
+        symbols: indexed.symbolCount,
+        edges: indexed.edgeCount,
+        durationMs: indexed.durationMs,
+      });
+    } catch (error: unknown) {
+      log.error('Digital twin indexing failed; scan results are unaffected', {
+        scanId,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
 
     await db
       .update(scans)

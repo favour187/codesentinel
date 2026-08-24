@@ -35,22 +35,42 @@ const SQL_STATEMENT =
   /\b(select\s+[\s\S]{0,200}?\bfrom\b|insert\s+into\b|update\s+[a-z_][\w".]*\s+set\b|delete\s+from\b|create\s+table\b|drop\s+table\b)/i;
 
 /** ORM/query-builder surfaces worth recording as a database touch. */
-const ORM_MEMBERS = new Set([
-  'query',
-  'execute',
+/*
+ * Members distinctive enough to imply a database on their own — no other
+ * common API uses these names.
+ */
+const ORM_MEMBERS_DISTINCTIVE = new Set([
   'findone',
   'findmany',
   'findunique',
   'findall',
   'findbypk',
+  'upsert',
+  'createquerybuilder',
+]);
+
+/*
+ * Members that are only a database touch when the receiver is itself a
+ * database handle. `update` in particular is shared with plenty of unrelated
+ * APIs — `crypto.createHash('md5').update(x)` is a hash, not a write, and
+ * recording it as one would be an invented relationship.
+ */
+const ORM_MEMBERS_AMBIGUOUS = new Set([
+  'query',
+  'execute',
   'insert',
   'update',
   'delete',
-  'upsert',
   'aggregate',
-  'createquerybuilder',
   'transaction',
 ]);
+
+/**
+ * Identifier names that conventionally hold a database handle. Used only to
+ * qualify the ambiguous members above, never to create an edge by itself.
+ */
+const DB_RECEIVER_NAME =
+  /^(db|database|prisma|knex|sequelize|mongoose|conn|connection|pool|client|datasource|orm|em|entitymanager|queryrunner|repo|repository|trx|tx|session|store|collection|model|table|sql)$/i;
 
 const DB_CLIENT_MODULES =
   /^(pg|mysql2?|sqlite3?|better-sqlite3|mongodb|mongoose|prisma|@prisma\/client|drizzle-orm|typeorm|sequelize|knex|redis|ioredis)(\/|$)/;
@@ -471,8 +491,22 @@ class TypeScriptParser implements LanguageParser {
   private collectOrmUse(sf: ts.SourceFile, node: ts.CallExpression, out: ParsedDatabaseUse[]): void {
     if (!ts.isPropertyAccessExpression(node.expression)) return;
     const member = node.expression.name.text.toLowerCase();
-    if (!ORM_MEMBERS.has(member)) return;
     const receiverText = node.expression.expression.getText(sf).slice(0, 60);
+
+    if (!ORM_MEMBERS_DISTINCTIVE.has(member)) {
+      if (!ORM_MEMBERS_AMBIGUOUS.has(member)) return;
+      /*
+       * Ambiguous member: only a database touch if the receiver looks like a
+       * database handle. The receiver is the last identifier in the chain, so
+       * `db.users.update()` qualifies on `users`… which is too loose, hence we
+       * test the root of the chain as well and accept either.
+       */
+      const parts = receiverText.split(/[.[\]()]/).filter(Boolean);
+      const root = parts[0] ?? '';
+      const last = parts[parts.length - 1] ?? '';
+      if (!DB_RECEIVER_NAME.test(root) && !DB_RECEIVER_NAME.test(last)) return;
+    }
+
     // `db.query(...)`, `prisma.user.findMany()`, `repo.findOne()`.
     out.push({
       target: this.receiverTarget(receiverText),

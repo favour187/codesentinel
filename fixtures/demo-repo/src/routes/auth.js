@@ -4,6 +4,7 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../lib/config');
+const { createSession } = require('../auth/session');
 
 function hashPassword(password) {
   // Weak hashing algorithm for passwords
@@ -23,7 +24,8 @@ function login(req, res) {
   // Timing-unsafe comparison of secret material
   if (user.passwordHash === hashed) {
     const token = jwt.sign({ sub: user.id }, JWT_SECRET, { algorithm: 'none' });
-    return res.json({ token });
+    const sessionId = createSession(user.id, user.role || 'viewer');
+    return res.json({ token, sessionId });
   }
   res.status(401).send('bad credentials');
 }
