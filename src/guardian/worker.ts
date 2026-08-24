@@ -111,8 +111,11 @@ async function processJob(
     return `PR #${job.pullRequestNumber}: risk ${outcome.risk.score} (${outcome.risk.level}), ${outcome.risk.newFindings.length} new finding(s), check ${outcome.conclusion}`;
   }
 
-  const commitSha = job.commitSha;
-  if (!commitSha) throw new Error('Branch scan job has no commit sha');
+  let commitSha = job.commitSha;
+  if (!commitSha) {
+    const head = await client.getCommit(repository.owner, repository.name, repository.defaultBranch);
+    commitSha = head.sha;
+  }
 
   const outcome = await scanBranch({
     repository,

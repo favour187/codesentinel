@@ -9,14 +9,26 @@ export function ScanButton({ repositoryId }: { repositoryId: string }) {
   const router = useRouter();
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [note, setNote] = React.useState<string | null>(null);
 
   async function run() {
     setPending(true);
     setError(null);
+    setNote(null);
     try {
       const res = await fetch(`/api/repositories/${repositoryId}/scan`, { method: 'POST' });
-      const body = (await res.json()) as { ok?: boolean; error?: string };
+      const body = (await res.json()) as {
+        ok?: boolean;
+        error?: string;
+        findings?: number;
+        health?: number;
+      };
       if (!res.ok || !body.ok) throw new Error(body.error ?? 'Scan failed');
+      setNote(
+        typeof body.findings === 'number'
+          ? `Scan finished — ${body.findings} finding${body.findings === 1 ? '' : 's'}.`
+          : 'Scan finished.',
+      );
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Scan failed');
@@ -36,6 +48,7 @@ export function ScanButton({ repositoryId }: { repositoryId: string }) {
           {error}
         </p>
       ) : null}
+      {note && !error ? <p className="max-w-xs text-right text-xs text-[hsl(var(--muted-foreground))]">{note}</p> : null}
     </div>
   );
 }

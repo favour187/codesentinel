@@ -1,4 +1,5 @@
 import { access, stat } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 /**
@@ -15,9 +16,17 @@ import path from 'node:path';
 export const DEMO_REPO_FULL_NAME = 'codesentinel/demo-repo';
 export const DEMO_REPO_DIRNAME = 'demo-repo';
 
-/** Absolute path to the fixture, resolved from the project root. */
+/** Absolute path to the fixture. Standalone deploys may run one directory down. */
 export function demoFixturePath(): string {
-  return path.join(process.cwd(), 'fixtures', DEMO_REPO_DIRNAME);
+  const candidates = [
+    path.join(process.cwd(), 'fixtures', DEMO_REPO_DIRNAME),
+    path.join(process.cwd(), '..', 'fixtures', DEMO_REPO_DIRNAME),
+    path.join(process.cwd(), '..', '..', 'fixtures', DEMO_REPO_DIRNAME),
+  ];
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) return candidate;
+  }
+  return candidates[0]!;
 }
 
 export async function demoFixtureExists(): Promise<boolean> {
