@@ -39,10 +39,22 @@ describe('env validation', () => {
     expect(getFeatures().githubOAuth).toBe(true);
   });
 
-  it('enables the LLM feature when a provider and key are configured', () => {
+  it('enables the LLM feature when either AI provider has a key', () => {
     resetEnvCache();
-    process.env.LLM_PROVIDER = 'openai';
-    process.env.LLM_API_KEY = 'sk-test-key';
+    process.env.FEATHERLESS_API_KEY = 'fk-test-key';
     expect(getFeatures().llm).toBe(true);
+    expect(getFeatures().featherless).toBe(true);
+    expect(getFeatures().groq).toBe(false);
+
+    resetEnvCache();
+    delete process.env.FEATHERLESS_API_KEY;
+    process.env.GROQ_API_KEY = 'gsk-test-key';
+    expect(getFeatures().llm).toBe(true);
+    expect(getFeatures().featherless).toBe(false);
+    expect(getFeatures().groq).toBe(true);
+
+    resetEnvCache();
+    delete process.env.GROQ_API_KEY;
+    expect(getFeatures().llm).toBe(false);
   });
 });

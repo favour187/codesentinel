@@ -96,10 +96,14 @@ CREATE TABLE IF NOT EXISTS commits (
   additions integer DEFAULT 0,
   deletions integer DEFAULT 0,
   changed_files integer DEFAULT 0,
+  changed_paths jsonb NOT NULL DEFAULT '[]'::jsonb,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE UNIQUE INDEX IF NOT EXISTS commits_repo_sha_idx ON commits (repository_id, sha);
 CREATE INDEX IF NOT EXISTS commits_authored_at_idx ON commits (authored_at);
+-- Additive patch: databases bootstrapped before commit-path tracking existed
+-- keep their rows; CREATE TABLE IF NOT EXISTS alone would silently skip it.
+ALTER TABLE commits ADD COLUMN IF NOT EXISTS changed_paths jsonb NOT NULL DEFAULT '[]'::jsonb;
 
 CREATE TABLE IF NOT EXISTS pull_requests (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -335,6 +339,42 @@ CREATE TABLE IF NOT EXISTS scan_jobs (
 );
 CREATE INDEX IF NOT EXISTS scan_jobs_status_idx ON scan_jobs (status, priority);
 CREATE INDEX IF NOT EXISTS scan_jobs_repo_idx ON scan_jobs (repository_id, created_at);
+
+CREATE TABLE IF NOT EXISTS ai_requests (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  repository_id uuid REFERENCES repositories(id) ON DELETE CASCADE,
+  finding_id uuid REFERENCES findings(id) ON DELETE SET NULL,
+  task text NOT NULL,
+  provider text,
+  model text,
+  status text NOT NULL,
+  duration_ms integer,
+  prompt_tokens integer,
+  completion_tokens integer,
+  attempts jsonb NOT NULL DEFAULT '[]'::jsonb,
+  evidence_sources jsonb NOT NULL DEFAULT '[]'::jsonb,
+  redacted_kinds jsonb NOT NULL DEFAULT '[]'::jsonb,
+  cache_key text,
+  response jsonb,
+  error text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS ai_requests_repo_created_idx ON ai_requests (repository_id, created_at);
+CREATE INDEX IF NOT EXISTS ai_requests_cache_idx ON ai_requests (cache_key);
+CREATE INDEX IF NOT EXISTS ai_requests_finding_idx ON ai_requests (finding_id);
+
+CREATE TABLE IF NOT EXISTS repository_memory (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  repository_id uuid NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
+  kind text NOT NULL DEFAULT 'decision',
+  title text NOT NULL,
+  body text NOT NULL,
+  paths jsonb NOT NULL DEFAULT '[]'::jsonb,
+  created_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS repository_memory_repo_idx ON repository_memory (repository_id, kind);
 `;
 
 /** All table names, in dependency order (useful for tests / teardown). */
@@ -356,6 +396,8 @@ export const TABLE_NAMES = [
   'repository_members',
   'webhook_deliveries',
   'scan_jobs',
+  'ai_requests',
+  'repository_memory',
 ] as const;
 
 export async function bootstrapSchema(database: Database): Promise<void> {

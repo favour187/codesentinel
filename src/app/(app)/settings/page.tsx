@@ -117,7 +117,7 @@ export default async function SettingsPage() {
                 label="AI explanations"
                 enabled={features.llm}
                 detail="Optional. AI explains and prioritises deterministic findings; it never generates findings on its own."
-                envHint="LLM_PROVIDER, LLM_API_KEY"
+                envHint="FEATHERLESS_API_KEY, GROQ_API_KEY"
               />
             </ul>
           </CardContent>

@@ -12,7 +12,10 @@ process.env.SESSION_SECRET = 'test-session-secret-value-at-least-32-chars-long';
 // 32 bytes, base64 — deterministic so encrypted fixtures stay decryptable.
 process.env.ENCRYPTION_KEY = Buffer.alloc(32, 7).toString('base64');
 process.env.DATABASE_URL = '';
-process.env.LLM_PROVIDER = 'none';
+// No AI provider keys in tests: every AI path must be explicitly stubbed, and
+// the deterministic suite must pass with AI entirely unavailable.
+delete process.env.FEATHERLESS_API_KEY;
+delete process.env.GROQ_API_KEY;
 
 import { afterEach } from 'vitest';
 import { closeTestDbs } from './helpers/test-db';

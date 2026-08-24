@@ -207,6 +207,15 @@ export const commits = pgTable(
     additions: integer('additions').default(0),
     deletions: integer('deletions').default(0),
     changedFiles: integer('changed_files').default(0),
+    /**
+     * Paths touched by this commit, capped per commit.
+     *
+     * The count above answers "how big was this change"; archaeology needs
+     * "which file", so the paths are stored too. Capped because a lockfile
+     * refresh or a formatting sweep can touch thousands of files and we only
+     * need enough to attribute history to a file under review.
+     */
+    changedPaths: jsonb('changed_paths').$type<string[]>().notNull().default([]),
     createdAt: timestamps.createdAt,
   },
   (t) => [
@@ -502,6 +511,85 @@ export const notifications = pgTable(
     createdAt: timestamps.createdAt,
   },
   (t) => [index('notifications_user_idx').on(t.userId, t.readAt)],
+);
+
+/* -------------------------------------------------------------------------- */
+/* AI: request ledger & repository memory                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Every AI call, successful or not.
+ *
+ * One table serves two jobs deliberately:
+ *  - **Activity log** — what was asked, which provider answered, how long it
+ *    took, which evidence it saw. Users can audit the AI rather than trust it.
+ *  - **Cache** — a completed row for the same `cacheKey` is reused instead of
+ *    paying for an identical call. The key is a hash of task + model + the
+ *    exact evidence, so any change in grounding produces a fresh answer.
+ *
+ * SECURITY: `response` holds the parsed, schema-validated result only. The
+ * prompt is NEVER stored — prompts contain repository source, and even after
+ * redaction that is content we have no reason to retain.
+ */
+export const aiRequests = pgTable(
+  'ai_requests',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    repositoryId: uuid('repository_id').references(() => repositories.id, { onDelete: 'cascade' }),
+    findingId: uuid('finding_id').references(() => findings.id, { onDelete: 'set null' }),
+    /** Task name, e.g. explain_finding | generate_fix | pr_review | chat. */
+    task: text('task').notNull(),
+    /** Provider that actually answered ('featherless' | 'groq'), null if none did. */
+    provider: text('provider'),
+    model: text('model'),
+    /** ok | failed | unavailable | cached */
+    status: text('status').notNull(),
+    durationMs: integer('duration_ms'),
+    promptTokens: integer('prompt_tokens'),
+    completionTokens: integer('completion_tokens'),
+    /** Providers tried before this one succeeded — proves fallback behaviour. */
+    attempts: jsonb('attempts').$type<Array<{ provider: string; error: string }>>().notNull().default([]),
+    /** What grounded the answer: file paths, finding ids, commit shas. */
+    evidenceSources: jsonb('evidence_sources').$type<string[]>().notNull().default([]),
+    /** Redaction rule names that fired. Never the redacted values. */
+    redactedKinds: jsonb('redacted_kinds').$type<string[]>().notNull().default([]),
+    cacheKey: text('cache_key'),
+    response: jsonb('response').$type<Record<string, unknown> | null>(),
+    error: text('error'),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [
+    index('ai_requests_repo_created_idx').on(t.repositoryId, t.createdAt),
+    index('ai_requests_cache_idx').on(t.cacheKey),
+    index('ai_requests_finding_idx').on(t.findingId),
+  ],
+);
+
+/**
+ * Durable facts a maintainer has told CodeSentinel about the repository:
+ * architecture decisions, intentional exceptions, accepted risks, conventions.
+ *
+ * These are authored by humans and are treated as authoritative context in
+ * prompts. An AI guess NEVER writes here — that would let a hallucination
+ * harden into a rule that shapes every later answer.
+ */
+export const repositoryMemory = pgTable(
+  'repository_memory',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    repositoryId: uuid('repository_id')
+      .notNull()
+      .references(() => repositories.id, { onDelete: 'cascade' }),
+    /** decision | exception | accepted_risk | policy | convention */
+    kind: text('kind').notNull().default('decision'),
+    title: text('title').notNull(),
+    body: text('body').notNull(),
+    /** Optional paths this fact applies to, for relevance filtering. */
+    paths: jsonb('paths').$type<string[]>().notNull().default([]),
+    createdByUserId: uuid('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    ...timestamps,
+  },
+  (t) => [index('repository_memory_repo_idx').on(t.repositoryId, t.kind)],
 );
 
 /** Team access control. */

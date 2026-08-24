@@ -33,10 +33,25 @@ const EnvSchema = z.object({
   GITHUB_APP_PRIVATE_KEY_PATH: z.string().optional().default(''),
   GITHUB_WEBHOOK_SECRET: z.string().optional().default(''),
 
-  LLM_PROVIDER: z.enum(['openai', 'anthropic', 'none']).default('none'),
-  LLM_API_KEY: z.string().optional().default(''),
-  LLM_MODEL: z.string().default('gpt-4o-mini'),
-  LLM_BASE_URL: z.string().optional().default(''),
+  /*
+   * AI providers. Featherless is primary and Groq is the fallback; either can
+   * be absent. When neither is configured the AI layer reports itself
+   * unavailable and every deterministic code path continues unchanged.
+   */
+  FEATHERLESS_API_KEY: z.string().optional().default(''),
+  FEATHERLESS_MODEL: z.string().default('meta-llama/Meta-Llama-3.1-8B-Instruct'),
+  FEATHERLESS_BASE_URL: z.string().url().default('https://api.featherless.ai/v1'),
+
+  GROQ_API_KEY: z.string().optional().default(''),
+  GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
+  GROQ_BASE_URL: z.string().url().default('https://api.groq.com/openai/v1'),
+
+  /** Hard ceiling on characters of repository evidence sent in one prompt. */
+  AI_MAX_CONTEXT_CHARS: z.coerce.number().int().positive().default(24_000),
+  /** Per-request timeout, milliseconds. */
+  AI_TIMEOUT_MS: z.coerce.number().int().positive().default(45_000),
+  /** Cached AI results are reused for this long. 0 disables caching. */
+  AI_CACHE_TTL_SECONDS: z.coerce.number().int().nonnegative().default(86_400),
 
   SEMGREP_PATH: z.string().optional().default(''),
   SCAN_MAX_FILE_BYTES: z.coerce.number().int().positive().default(1_000_000),
@@ -78,8 +93,12 @@ export interface FeatureFlags {
   githubApp: boolean;
   /** Webhook signature verification possible. */
   webhooks: boolean;
-  /** LLM-backed explanations available. */
+  /** LLM-backed explanations available (at least one AI provider configured). */
   llm: boolean;
+  /** Featherless (primary AI provider) configured. */
+  featherless: boolean;
+  /** Groq (fallback AI provider) configured. */
+  groq: boolean;
   /** Tokens can be encrypted at rest with a dedicated key. */
   encryptionKey: boolean;
 }
@@ -90,7 +109,9 @@ export function getFeatures(env: Env = getEnv()): FeatureFlags {
     githubOAuth: Boolean(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET),
     githubApp: Boolean(env.GITHUB_APP_ID && (env.GITHUB_APP_PRIVATE_KEY || env.GITHUB_APP_PRIVATE_KEY_PATH)),
     webhooks: Boolean(env.GITHUB_WEBHOOK_SECRET),
-    llm: env.LLM_PROVIDER !== 'none' && Boolean(env.LLM_API_KEY),
+    llm: Boolean(env.FEATHERLESS_API_KEY || env.GROQ_API_KEY),
+    featherless: Boolean(env.FEATHERLESS_API_KEY),
+    groq: Boolean(env.GROQ_API_KEY),
     encryptionKey: env.ENCRYPTION_KEY.trim().length > 0,
   };
 }

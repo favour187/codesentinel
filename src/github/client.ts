@@ -151,7 +151,7 @@ export class GitHubClient {
       author: { name?: string; email?: string; date?: string } | null;
     };
     stats?: { additions?: number; deletions?: number };
-    files?: Array<unknown>;
+    files?: Array<{ filename: string; status?: string; additions?: number; deletions?: number }>;
   }> {
     return this.request('GET', `/repos/${owner}/${repo}/commits/${sha}`);
   }

@@ -527,6 +527,9 @@ async function recordCommit(
         additions: commit.stats?.additions ?? 0,
         deletions: commit.stats?.deletions ?? 0,
         changedFiles: commit.files?.length ?? 0,
+        // Capped: a lockfile or formatting sweep can touch thousands of files,
+        // and archaeology only needs enough to attribute history to a file.
+        changedPaths: (commit.files ?? []).slice(0, 100).map((f) => f.filename),
       })
       .onConflictDoNothing({ target: [commits.repositoryId, commits.sha] });
   } catch (err) {
