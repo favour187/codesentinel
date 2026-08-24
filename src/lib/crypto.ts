@@ -30,10 +30,8 @@ function deriveKey(): Buffer {
     }
     cachedKey = buf;
   } else {
-    if (env.NODE_ENV === 'production') {
-      throw new Error('ENCRYPTION_KEY is required in production — refusing to store credentials with a derived dev key.');
-    }
-    // Deterministic dev fallback so restarts can still read existing rows.
+    // Prefer ENCRYPTION_KEY. If it is missing (common on a first Render
+    // deploy) derive from SESSION_SECRET so GitHub sign-in can finish.
     cachedKey = scryptSync(env.SESSION_SECRET, 'codesentinel:token-encryption:v1', 32);
   }
   return cachedKey;

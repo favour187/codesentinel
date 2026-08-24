@@ -11,6 +11,12 @@ const ERROR_MESSAGES: Record<string, string> = {
   missing_code: 'GitHub did not return an authorisation code. Please try again.',
   oauth_start_failed: 'Could not start GitHub sign-in. Check the server logs and your OAuth configuration.',
   oauth_failed: 'We could not complete GitHub sign-in. Please try again.',
+  encryption_key:
+    'Set ENCRYPTION_KEY on Render to a 32-byte base64 value (openssl rand -base64 32), then redeploy and try Connect GitHub again.',
+  token_exchange:
+    'GitHub rejected the token exchange. Confirm GITHUB_CLIENT_SECRET and that the OAuth App callback is exactly this host plus /api/auth/github/callback',
+  github_user: 'Signed in at GitHub, but we could not read your profile. Retry, or check the GitHub token scopes.',
+  database: 'Signed in at GitHub, but the database write failed. Confirm DATABASE_URL and redeploy.',
   demo_failed: 'The demo workspace could not be started. Check the server logs.',
   access_denied: 'GitHub authorisation was cancelled.',
 };

@@ -98,7 +98,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     response.cookies.set(OAUTH_STATE_COOKIE, '', sessionCookieOptions(0));
     return response;
   } catch (err) {
-    log.error('OAuth callback failed', { error: (err as Error).message });
-    return redirectTo(request, '/login?error=oauth_failed');
+    const message = (err as Error).message ?? '';
+    log.error('OAuth callback failed', { error: message });
+    let code = 'oauth_failed';
+    if (/ENCRYPTION_KEY/i.test(message)) code = 'encryption_key';
+    else if (/token exchange|access token|redirect_uri|bad_verification/i.test(message)) code = 'token_exchange';
+    else if (/Failed to fetch GitHub user/i.test(message)) code = 'github_user';
+    else if (/Failed to create user|violates|relation .* does not exist/i.test(message)) code = 'database';
+    return redirectTo(request, `/login?error=${code}`);
   }
 }
