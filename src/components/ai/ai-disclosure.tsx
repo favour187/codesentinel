@@ -114,7 +114,7 @@ export function AIDisclosure({
       <CircleHelp className="size-3.5" aria-hidden="true" />
       <span>AI-generated from your repository. Verify before acting.</span>
       {confidence ? <ConfidenceBadge confidence={confidence} /> : null}
-      {parts.length > 0 ? <span className="ml-auto font-mono">{parts.join(' · ')}</span> : null}
+      {parts.length > 0 ? <span className="w-full break-all font-mono sm:ml-auto sm:w-auto">{parts.join(' · ')}</span> : null}
     </div>
   );
 }
