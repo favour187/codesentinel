@@ -300,6 +300,30 @@ describe('handleWebhook — check_run re-run', () => {
   });
 });
 
+describe('handleWebhook — installation', () => {
+  it('turns Guardian on for already-connected repos on the account', async () => {
+    await db.update(repositories).set({ guardianEnabled: false }).where(eq(repositories.id, repositoryId));
+
+    const outcome = await handleWebhook({
+      deliveryId: nextDelivery(),
+      event: 'installation',
+      payload: {
+        action: 'created',
+        installation: {
+          id: 9991,
+          account: { login: 'tester', type: 'User', id: 1 },
+          repository_selection: 'all',
+          permissions: { contents: 'read' },
+        },
+      },
+    });
+
+    expect(outcome.status).toBe('processed');
+    const [row] = await db.select().from(repositories).where(eq(repositories.id, repositoryId));
+    expect(row?.guardianEnabled).toBe(true);
+  });
+});
+
 describe('handleWebhook — unknown events', () => {
   it('acknowledges ping', async () => {
     const outcome = await handleWebhook({ deliveryId: nextDelivery(), event: 'ping', payload: repoPayload() });

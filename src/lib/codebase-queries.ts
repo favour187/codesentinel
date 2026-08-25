@@ -131,11 +131,6 @@ export async function getArchitectureOverview(repositoryId: string): Promise<Arc
   };
 }
 
-/** Fixture / test trees are scanned for findings, but they are not this app's API or schema. */
-function isSupportPath(filePath: string): boolean {
-  return /(?:^|\/)(fixtures|tests|node_modules|\.next|dist|coverage)(?:\/|$)/.test(filePath);
-}
-
 function dedupeDatabaseTargets(
   rows: Array<{ target: string; filePath: string; evidence: string | null }>,
 ): Array<{ target: string; filePath: string; evidence: string | null }> {
