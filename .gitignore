@@ -47,3 +47,6 @@ coverage/
 !.vscode/extensions.json
 npm-debug.log*
 yarn-error.log*
+
+# Local recordings and generated media
+video/

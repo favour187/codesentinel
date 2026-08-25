@@ -2,25 +2,9 @@
 
 **Your repository's autonomous code guardian.**
 
-Built for **[Proof of Possible 2026](https://proof-of-possible-2026.devpost.com/)** — *Don’t pitch the future. Build evidence.* Live on **Render**: [codesentinel-3yg4.onrender.com](https://codesentinel-3yg4.onrender.com/?judge=1). Judge pack: [`docs/PROOF-OF-POSSIBLE.md`](./docs/PROOF-OF-POSSIBLE.md).
-
 Code assistants help developers *write* code. CodeSentinel helps them **understand, protect, and verify** a repository.
 
 It connects to GitHub (or a local demo fixture), runs deterministic scanners on real files, maps how code depends on itself, and optionally uses an LLM only to explain evidence it already has. Fixes are proposed as diffs. Nothing is applied without approval.
-
----
-
-## Problem
-
-Pull requests change more than the files in the diff. A one-line auth change can reach APIs, data, and untested helpers. Generic chatbots do not watch that surface continuously, and they invent findings.
-
-## Solution
-
-1. **Observe** pushes and pull requests (or a manual scan).
-2. **Analyze** with scanners that read the checkout.
-3. **Understand** impact via a digital twin (imports, components, routes).
-4. **Protect** with Guardian checks and comments — reporting, not silent edits.
-5. **Verify** that a fingerprint is gone after an approved change.
 
 ## How it works
 
@@ -38,26 +22,9 @@ GitHub webhook or Run scan
    reviewable patch (never auto-merged)
 ```
 
-## What is implemented
+## Run locally
 
-- GitHub OAuth + GitHub App Guardian (webhooks, Checks, sticky PR comments)
-- Eight scanners: secrets, security, dependencies, quality, testing, infrastructure, CI/CD, config
-- Digital twin, blast radius, test-gap intelligence
-- Repository risk 2.0 (deterministic)
-- Fix Center with explicit approval
-- Demo workspace that uses the **same** pipeline on `fixtures/demo-repo`
-
-AI is optional. If Featherless and Groq are both down, Guardian and scanners still run.
-
-## Security
-
-- Tokens encrypted at rest (AES-256-GCM)
-- Discovered secrets fingerprinted and masked — never shown in full
-- Webhook HMAC verification
-- Per-repository authorization
-- No automatic code modification
-
-## Demo (judges)
+Requires Node 20+.
 
 ```bash
 npm install
@@ -68,42 +35,25 @@ npm run dev
 
 Open http://localhost:3000 → **Explore Demo** → **Run scan**.
 
-Script: [`docs/DEMO.md`](./docs/DEMO.md)
-
-Add `?judge=1` for a shortcut bar. **Reset demo** (demo only) wipes fixture analysis and re-scans. It cannot touch a GitHub repository.
-
-## Install
-
-Requires Node 20+. PostgreSQL is optional locally (embedded PGlite if `DATABASE_URL` is empty).
-
-See [`.env.example`](./.env.example) and [`docs/environment.md`](./docs/environment.md).
-
 ```bash
-npm run db:migrate   # when using a real Postgres
 npm test
 npm run build
 npm start
 ```
 
-## Deploy (Render)
+PostgreSQL is optional locally (embedded PGlite if `DATABASE_URL` is empty). See [`.env.example`](./.env.example).
 
-One **Web Service**. No separate worker.
+## Deploy
 
-1. Use `render.yaml` (free web, 512 MB) or create a Node web service.
-2. Health check: `GET /api/health`
-3. Set `APP_URL`, `SESSION_SECRET`, and **`DATABASE_URL`** + `ENCRYPTION_KEY`. PGlite will OOM on Render free.
-4. Boot runs `scripts/render-start.sh` (migrate + standalone server, heap capped at 384 MB).
+`render.yaml` describes a Node web service. Health check: `GET /api/health`. Set `APP_URL`, `SESSION_SECRET`, `DATABASE_URL`, and `ENCRYPTION_KEY`. Start command: `sh scripts/render-start.sh`.
 
-Details: [`docs/deployment.md`](./docs/deployment.md)
+## Security
 
-## Tech stack
-
-Next.js 15 · React 19 · TypeScript · Tailwind · Drizzle · PostgreSQL / PGlite · Vitest
-
-## Roadmap
-
-Deeper policy UI, more notification sinks, ingested coverage reports, a dedicated scan worker for very large repos.
+- Tokens encrypted at rest (AES-256-GCM)
+- Discovered secrets fingerprinted and masked
+- Webhook HMAC verification
+- No automatic code modification
 
 ## License
 
-MIT.
+MIT. See [LICENSE](./LICENSE).

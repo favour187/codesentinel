@@ -113,10 +113,6 @@ export async function Landing({ error }: { error?: string | null }) {
             </div>
           )}
         </section>
-
-        <p className="mt-16 text-center text-xs text-[hsl(var(--muted-foreground))]">
-          Proof of Possible 2026 · Don’t pitch. Build evidence. · hosted on Render
-        </p>
       </main>
     </div>
   );
