@@ -2,7 +2,11 @@ import { and, eq } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { installations, repositories, webhookDeliveries } from '@/db/schema';
 import { enqueueScan } from './jobs';
-import { getRepositoryPolicy } from '@/lib/repositories';
+import {
+  activateGuardianForConnectedRepo,
+  getRepositoryPolicy,
+  upsertInstallationRow,
+} from '@/lib/repositories';
 import { createLogger } from '@/lib/logger';
 
 /**

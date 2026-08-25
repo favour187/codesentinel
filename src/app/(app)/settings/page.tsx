@@ -7,8 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { GitHubRepoPicker } from '@/components/dashboard/github-repo-picker';
+import { EnableGuardianButton } from '@/components/dashboard/enable-guardian-button';
 import { getCurrentUser } from '@/lib/auth/current-user';
-import { listRepositoriesForUser } from '@/lib/repositories';
+import { activateGuardianForConnectedRepo, listRepositoriesForUser } from '@/lib/repositories';
 import { getFeatures } from '@/lib/env';
 import { probeAIProviders } from '@/lib/ai-status';
 import { getDbKind } from '@/db';
@@ -59,7 +60,11 @@ export default async function SettingsPage() {
 
   const features = getFeatures();
   const dbKind = getDbKind();
-  const repos = await listRepositoriesForUser(user.id);
+  let repos = await listRepositoriesForUser(user.id);
+  for (const repo of repos.filter((r) => !r.isDemo && !r.guardianEnabled)) {
+    await activateGuardianForConnectedRepo(repo.owner, repo.name, repo.fullName);
+  }
+  repos = await listRepositoriesForUser(user.id);
   const ai = features.llm ? await probeAIProviders() : null;
 
   return (
@@ -151,20 +156,21 @@ export default async function SettingsPage() {
             ) : (
               <ul className="divide-y divide-[hsl(var(--border))]">
                 {repos.map((r) => (
-                  <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-4 first:pt-0 last:pb-0">
+                  <li key={r.id} className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
-                      <p className="truncate font-mono text-sm">{r.fullName}</p>
+                      <p className="break-all font-mono text-sm">{r.fullName}</p>
                       <p className="mt-0.5 text-xs text-[hsl(var(--muted-foreground))]">
                         {r.primaryLanguage ? `${r.primaryLanguage} · ` : ''}
                         default branch <span className="font-mono">{r.defaultBranch}</span> · last scan{' '}
                         {timeAgo(r.lastScanAt)}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       {r.isDemo ? <Badge variant="medium">Demo fixture</Badge> : <Badge variant="outline">GitHub</Badge>}
                       <Badge variant={r.guardianEnabled ? 'success' : 'outline'}>
                         Guardian {r.guardianEnabled ? 'on' : 'off'}
                       </Badge>
+                      {!r.isDemo && !r.guardianEnabled ? <EnableGuardianButton repositoryId={r.id} /> : null}
                     </div>
                   </li>
                 ))}

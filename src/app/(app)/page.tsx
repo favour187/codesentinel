@@ -7,10 +7,11 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ScoreRing, ScoreBar } from '@/components/dashboard/score-ring';
 import { ConnectRepository } from '@/components/dashboard/connect-repository';
 import { ScanButton } from '@/components/dashboard/scan-button';
+import { EnableGuardianButton } from '@/components/dashboard/enable-guardian-button';
 import { DemoResetButton } from '@/components/dashboard/demo-reset-button';
 import { Landing } from '@/components/marketing/landing';
 import { getCurrentUser } from '@/lib/auth/current-user';
-import { listRepositoriesForUser } from '@/lib/repositories';
+import { activateGuardianForConnectedRepo, listRepositoriesForUser } from '@/lib/repositories';
 import { getLatestSnapshot, getOpenFindings, getRecentScans } from '@/lib/analysis-queries';
 import { getRepositoryRisk } from '@/lib/guardian-risk';
 import { timeAgo } from '@/lib/utils';
@@ -31,7 +32,11 @@ export default async function OverviewPage() {
   const user = await getCurrentUser();
   if (!user) return <Landing />;
 
-  const repos = await listRepositoriesForUser(user.id);
+  let repos = await listRepositoriesForUser(user.id);
+  for (const item of repos.filter((r) => !r.isDemo && !r.guardianEnabled)) {
+    await activateGuardianForConnectedRepo(item.owner, item.name, item.fullName);
+  }
+  repos = await listRepositoriesForUser(user.id);
   const repo = repos[0];
 
   if (!repo) {

@@ -75,14 +75,20 @@ export function GitHubRepoPicker() {
       ) : (
         <ul className="divide-y divide-[hsl(var(--border))]">
           {repos.map((repo) => (
-            <li key={repo.fullName} className="flex flex-wrap items-center justify-between gap-3 py-3">
+            <li key={repo.fullName} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <p className="truncate font-mono text-sm">{repo.fullName}</p>
+                <p className="break-all font-mono text-sm">{repo.fullName}</p>
                 {repo.description ? (
-                  <p className="truncate text-xs text-[hsl(var(--muted-foreground))]">{repo.description}</p>
+                  <p className="mt-0.5 line-clamp-2 text-xs text-[hsl(var(--muted-foreground))]">{repo.description}</p>
                 ) : null}
               </div>
-              <Button size="sm" onClick={() => void connect(repo)} disabled={busy !== null}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full shrink-0 sm:w-auto"
+                onClick={() => void connect(repo)}
+                disabled={busy !== null}
+              >
                 {busy === repo.fullName ? <Loader2 className="size-4 animate-spin" /> : null}
                 Connect
               </Button>
