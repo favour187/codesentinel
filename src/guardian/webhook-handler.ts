@@ -158,29 +158,35 @@ async function handleInstallation(
     return { status: 'processed', message: `Installation ${installation.id} marked removed` };
   }
 
-  const values = {
+  const accountLogin = installation.account?.login ?? 'unknown';
+  await upsertInstallationRow({
     installationId: installation.id,
-    accountLogin: installation.account?.login ?? 'unknown',
+    accountLogin,
     accountType: installation.account?.type ?? 'User',
     targetId: installation.account?.id ?? null,
     repositorySelection: installation.repository_selection ?? 'selected',
     permissions: installation.permissions ?? {},
     suspendedAt: action === 'suspend' ? new Date() : null,
-  };
+  });
 
-  const existing = await db
-    .select({ id: installations.id })
-    .from(installations)
-    .where(eq(installations.installationId, installation.id))
-    .limit(1);
+  const listed = payload.repositories as Array<{ full_name?: string; name?: string }> | undefined;
+  const names = listed?.map((r) => r.full_name).filter((n): n is string => Boolean(n)) ?? [];
 
-  if (existing[0]) {
-    await db
-      .update(installations)
-      .set({ ...values, updatedAt: new Date() })
-      .where(eq(installations.id, existing[0].id));
+  if (names.length > 0) {
+    await Promise.all(
+      names.map((fullName) => {
+        const [owner, name] = fullName.split('/');
+        return activateGuardianForConnectedRepo(owner ?? accountLogin, name ?? fullName, fullName);
+      }),
+    );
   } else {
-    await db.insert(installations).values(values);
+    const connected = await db
+      .select({ owner: repositories.owner, name: repositories.name, fullName: repositories.fullName })
+      .from(repositories)
+      .where(eq(repositories.owner, accountLogin));
+    await Promise.all(
+      connected.map((r) => activateGuardianForConnectedRepo(r.owner, r.name, r.fullName)),
+    );
   }
 
   return { status: 'processed', message: `Installation ${installation.id} recorded (${action ?? 'sync'})` };

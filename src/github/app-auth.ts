@@ -64,6 +64,32 @@ export async function loadPrivateKey(): Promise<string> {
 }
 
 /** Mint a short-lived RS256 JWT authenticating as the App itself. */
+/** Look up whether this App is installed on a repo (JWT, no user token). */
+export async function getRepoInstallation(
+  owner: string,
+  repo: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<{ id: number; accountLogin: string } | null> {
+  if (!isGitHubAppConfigured()) return null;
+  try {
+    const jwt = await createAppJwt();
+    const response = await fetchImpl(`${GITHUB_API}/repos/${owner}/${repo}/installation`, {
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'CodeSentinel',
+      },
+    });
+    if (!response.ok) return null;
+    const body = (await response.json()) as { id?: number; account?: { login?: string } };
+    if (typeof body.id !== 'number') return null;
+    return { id: body.id, accountLogin: body.account?.login ?? owner };
+  } catch {
+    return null;
+  }
+}
+
 export async function createAppJwt(now: number = Date.now()): Promise<string> {
   const env = getEnv();
   if (!env.GITHUB_APP_ID) throw new GitHubAppNotConfiguredError('GITHUB_APP_ID is not set');

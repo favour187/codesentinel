@@ -1,6 +1,7 @@
-import { desc, eq, or, inArray } from 'drizzle-orm';
-import { db, repositories, repositoryMembers, repositoryPolicies } from '@/db';
+import { and, desc, eq, or, inArray, isNull } from 'drizzle-orm';
+import { db, installations, repositories, repositoryMembers, repositoryPolicies } from '@/db';
 import type { RepoSource, Severity } from '@/db/schema';
+import { getRepoInstallation, isGitHubAppConfigured } from '@/github/app-auth';
 
 export interface RepositorySummary {
   id: string;
@@ -142,7 +143,9 @@ export async function connectGitHubRepository(
         updatedAt: new Date(),
       })
       .where(eq(repositories.id, existing.id));
-    return { ...toSummary(existing), ...input, id: existing.id, source: existing.source, guardianEnabled: existing.guardianEnabled, lastScanAt: existing.lastScanAt, isDemo: existing.source === 'demo' };
+    await activateGuardianForConnectedRepo(input.owner, input.name, input.fullName);
+    const [fresh] = await database.select().from(repositories).where(eq(repositories.id, existing.id)).limit(1);
+    return toSummary(fresh ?? existing);
   }
 
   const [created] = await database
@@ -164,7 +167,84 @@ export async function connectGitHubRepository(
 
   if (!created) throw new Error('Failed to connect repository');
   await database.insert(repositoryPolicies).values({ repositoryId: created.id }).onConflictDoNothing();
-  return toSummary(created);
+  await activateGuardianForConnectedRepo(created.owner, created.name, created.fullName);
+  const [fresh] = await database.select().from(repositories).where(eq(repositories.id, created.id)).limit(1);
+  return toSummary(fresh ?? created);
+}
+
+/** Attach a GitHub App installation and turn Guardian on for a connected repo. */
+export async function activateGuardianForConnectedRepo(
+  owner: string,
+  name: string,
+  fullName: string,
+): Promise<boolean> {
+  const database = await db();
+
+  let [inst] = await database
+    .select()
+    .from(installations)
+    .where(and(eq(installations.accountLogin, owner), isNull(installations.suspendedAt)))
+    .limit(1);
+
+  if (!inst && isGitHubAppConfigured()) {
+    const remote = await getRepoInstallation(owner, name);
+    if (remote) {
+      inst = await upsertInstallationRow({
+        installationId: remote.id,
+        accountLogin: remote.accountLogin,
+        repositorySelection: 'selected',
+      });
+    }
+  }
+
+  if (!inst) return false;
+
+  await database
+    .update(repositories)
+    .set({
+      installationId: inst.id,
+      guardianEnabled: true,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(repositories.fullName, fullName), eq(repositories.source, 'github')));
+  return true;
+}
+
+export async function upsertInstallationRow(input: {
+  installationId: number;
+  accountLogin: string;
+  accountType?: string;
+  targetId?: number | null;
+  repositorySelection?: string;
+  permissions?: Record<string, string>;
+  suspendedAt?: Date | null;
+}): Promise<typeof installations.$inferSelect> {
+  const database = await db();
+  const [existing] = await database
+    .select()
+    .from(installations)
+    .where(eq(installations.installationId, input.installationId))
+    .limit(1);
+
+  const values = {
+    installationId: input.installationId,
+    accountLogin: input.accountLogin,
+    accountType: input.accountType ?? 'User',
+    targetId: input.targetId ?? null,
+    repositorySelection: input.repositorySelection ?? 'selected',
+    permissions: input.permissions ?? {},
+    suspendedAt: input.suspendedAt ?? null,
+    updatedAt: new Date(),
+  };
+
+  if (existing) {
+    await database.update(installations).set(values).where(eq(installations.id, existing.id));
+    return { ...existing, ...values };
+  }
+
+  const [created] = await database.insert(installations).values(values).returning();
+  if (!created) throw new Error('Failed to record installation');
+  return created;
 }
 
 function toSummary(row: RepositoryRow): RepositorySummary {
