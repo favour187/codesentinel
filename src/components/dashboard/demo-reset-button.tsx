@@ -26,8 +26,8 @@ export function DemoResetButton() {
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
-      <Button onClick={reset} disabled={pending} size="sm" variant="outline">
+    <div className="flex w-full flex-col items-stretch gap-1 sm:w-auto sm:items-end">
+      <Button onClick={reset} disabled={pending} size="sm" variant="outline" className="w-full sm:w-auto">
         {pending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <RotateCcw className="size-4" aria-hidden="true" />}
         {pending ? 'Resetting…' : 'Reset demo'}
       </Button>

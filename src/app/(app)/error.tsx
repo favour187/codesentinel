@@ -34,12 +34,12 @@ export default function ErrorBoundary({
           <p className="mt-2 font-mono">{error.message || 'Unknown error'}</p>
           {error.digest ? <p className="mt-1 font-mono">digest: {error.digest}</p> : null}
         </details>
-        <div className="flex justify-center gap-3">
-          <Button onClick={reset} variant="outline">
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <Button onClick={reset} variant="outline" className="w-full sm:w-auto">
             <RotateCcw className="size-4" />
             Retry
           </Button>
-          <Button asChild>
+          <Button asChild className="w-full sm:w-auto">
             <Link href="/">Overview</Link>
           </Button>
         </div>

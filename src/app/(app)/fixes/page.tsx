@@ -95,12 +95,12 @@ export default async function FixCenterPage({
                       : 'border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]',
                   )}
                 >
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <span className="text-sm font-medium leading-snug">{finding.title}</span>
-                    <Badge variant={SEVERITY_VARIANT[finding.severity]}>{finding.severity}</Badge>
+                    <Badge variant={SEVERITY_VARIANT[finding.severity]} className="w-fit">{finding.severity}</Badge>
                   </div>
                   {finding.filePath ? (
-                    <p className="mt-1 truncate font-mono text-xs text-[hsl(var(--muted-foreground))]">
+                    <p className="mt-1 break-all font-mono text-xs text-[hsl(var(--muted-foreground))]">
                       {finding.filePath}
                       {finding.lineStart ? `:${finding.lineStart}` : ''}
                     </p>
@@ -111,7 +111,7 @@ export default async function FixCenterPage({
           </nav>
 
           {/* Review panel */}
-          <Card className="p-6">
+          <Card className="p-4 sm:p-6">
             {!isAIConfigured() ? <AIUnavailableNotice className="mb-6" /> : null}
 
             {selected ? (

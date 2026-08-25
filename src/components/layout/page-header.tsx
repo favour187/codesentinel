@@ -17,7 +17,11 @@ export function PageHeader({ title, description, actions, className }: PageHeade
           <p className="max-w-2xl text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">{description}</p>
         ) : null}
       </div>
-      {actions ? <div className="flex min-w-0 flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">{actions}</div> : null}
+      {actions ? (
+        <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
+          {actions}
+        </div>
+      ) : null}
     </div>
   );
 }

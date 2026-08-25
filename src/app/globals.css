@@ -83,7 +83,7 @@
 
   html {
     color-scheme: light;
-    overflow-x: clip;
+    overflow-x: hidden;
   }
   html.dark {
     color-scheme: dark;
@@ -97,7 +97,8 @@
     text-rendering: optimizeLegibility;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     min-width: 0;
-    overflow-x: clip;
+    overflow-x: hidden;
+    overflow-wrap: anywhere;
   }
 
   /* Keyboard-first: always show a clear focus ring for keyboard users. */

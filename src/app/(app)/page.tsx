@@ -66,12 +66,13 @@ export default async function OverviewPage() {
         title="Overview"
         description={`Is ${repo.fullName} safe and healthy?`}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             {repo.isDemo ? <Badge variant="medium">Demo fixture</Badge> : null}
             <Badge variant={repo.guardianEnabled || repo.isDemo ? 'success' : 'outline'}>
               <Radar className="size-3" aria-hidden="true" />
               Guardian {repo.guardianEnabled || repo.isDemo ? 'active' : 'off'}
             </Badge>
+            {!repo.isDemo && !repo.guardianEnabled ? <EnableGuardianButton repositoryId={repo.id} /> : null}
             <ScanButton repositoryId={repo.id} />
             {repo.isDemo ? <DemoResetButton /> : null}
           </div>
@@ -156,14 +157,14 @@ export default async function OverviewPage() {
             ) : (
               <ul className="divide-y divide-[hsl(var(--border))]">
                 {findings.map((finding) => (
-                  <li key={finding.id} className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                  <li key={finding.id} className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{finding.title}</p>
-                      <p className="truncate font-mono text-xs text-[hsl(var(--muted-foreground))]">
+                      <p className="text-sm font-medium">{finding.title}</p>
+                      <p className="mt-0.5 break-all font-mono text-xs text-[hsl(var(--muted-foreground))]">
                         {finding.filePath ?? finding.ruleId}
                       </p>
                     </div>
-                    <Badge variant={SEV[finding.severity]}>{finding.severity}</Badge>
+                    <Badge variant={SEV[finding.severity]} className="w-fit">{finding.severity}</Badge>
                   </li>
                 ))}
               </ul>
@@ -183,7 +184,7 @@ export default async function OverviewPage() {
             ) : (
               <ul className="divide-y divide-[hsl(var(--border))]">
                 {scans.map((scan) => (
-                  <li key={scan.id} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
+                  <li key={scan.id} className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium capitalize">{scan.trigger} scan</p>
                       <p className="text-xs text-[hsl(var(--muted-foreground))]">{timeAgo(scan.createdAt)}</p>

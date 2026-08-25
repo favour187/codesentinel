@@ -35,10 +35,10 @@ export function CodebaseSearch({ documents }: { documents: SearchDocument[] }) {
             </li>
           ) : (
             hits.map((hit) => (
-              <li key={hit.id} className="flex items-start justify-between gap-4 py-3">
+              <li key={hit.id} className="flex flex-col gap-1 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                 <div className="min-w-0">
-                  <p className="truncate font-mono text-sm">{hit.title}</p>
-                  <p className="mt-0.5 truncate text-xs text-[hsl(var(--muted-foreground))]">{hit.subtitle}</p>
+                  <p className="break-all font-mono text-sm">{hit.title}</p>
+                  <p className="mt-0.5 break-all text-xs text-[hsl(var(--muted-foreground))]">{hit.subtitle}</p>
                 </div>
                 <span className="shrink-0 text-xs capitalize text-[hsl(var(--muted-foreground))]">{hit.kind}</span>
               </li>

@@ -38,17 +38,19 @@ export function ScanButton({ repositoryId }: { repositoryId: string }) {
   }
 
   return (
-    <div className="flex flex-col items-start gap-2 sm:items-end">
-      <Button onClick={run} disabled={pending} size="sm">
+    <div className="flex w-full min-w-0 flex-col items-stretch gap-2 sm:w-auto sm:items-end">
+      <Button onClick={run} disabled={pending} size="sm" className="w-full sm:w-auto">
         {pending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Play className="size-4" aria-hidden="true" />}
         {pending ? 'Scanning…' : 'Run scan'}
       </Button>
       {error ? (
-        <p role="alert" className="max-w-xs text-right text-xs text-[hsl(var(--critical))]">
+        <p role="alert" className="max-w-xs text-left text-xs text-[hsl(var(--critical))] sm:text-right">
           {error}
         </p>
       ) : null}
-      {note && !error ? <p className="max-w-xs text-right text-xs text-[hsl(var(--muted-foreground))]">{note}</p> : null}
+      {note && !error ? (
+        <p className="max-w-xs text-left text-xs text-[hsl(var(--muted-foreground))] sm:text-right">{note}</p>
+      ) : null}
     </div>
   );
 }

@@ -98,7 +98,7 @@ export default async function TestingPage() {
                 <CardTitle>Tests without assertions</CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-1 font-mono text-sm">
+                <ul className="space-y-1 break-all font-mono text-sm">
                   {intel.testsWithoutAssertions.map((path) => (
                     <li key={path}>{path}</li>
                   ))}
@@ -120,10 +120,10 @@ export default async function TestingPage() {
                 {gaps.map((gap) => (
                   <Card key={`${gap.filePath}:${gap.symbolName}:${gap.lineStart}`}>
                     <CardContent className="p-5">
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                         <p className="text-sm font-semibold">{gap.symbolName}</p>
-                        <Badge variant={SEVERITY_VARIANT[gap.severity]}>{gap.severity}</Badge>
-                        <span className="font-mono text-xs text-[hsl(var(--muted-foreground))]">
+                        <Badge variant={SEVERITY_VARIANT[gap.severity]} className="w-fit">{gap.severity}</Badge>
+                        <span className="break-all font-mono text-xs text-[hsl(var(--muted-foreground))]">
                           {gap.filePath}:{gap.lineStart}
                         </span>
                       </div>
@@ -165,8 +165,8 @@ export default async function TestingPage() {
                   <ul className="divide-y divide-[hsl(var(--border))]">
                     {recommended.map((test) => (
                       <li key={test.testPath} className="py-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="font-mono text-sm">{test.testPath}</p>
+                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                          <p className="break-all font-mono text-sm">{test.testPath}</p>
                           <span className="tabular-nums text-xs text-[hsl(var(--muted-foreground))]">
                             {test.score}
                           </span>

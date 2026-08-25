@@ -32,7 +32,7 @@ export function EnableGuardianButton({ repositoryId }: { repositoryId: string })
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <Button type="button" size="sm" variant="outline" onClick={() => void enable()} disabled={busy}>
+      <Button type="button" size="sm" variant="outline" className="w-full sm:w-auto" onClick={() => void enable()} disabled={busy}>
         {busy ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Radar className="size-4" aria-hidden="true" />}
         {busy ? 'Turning on…' : 'Turn Guardian on'}
       </Button>

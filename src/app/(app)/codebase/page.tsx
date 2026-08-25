@@ -153,10 +153,10 @@ export default async function CodebasePage() {
                   {inventory.packages.slice(0, 40).map((pkg) => (
                     <li
                       key={`${pkg.ecosystem}:${pkg.name}:${pkg.manifestPath ?? ''}`}
-                      className="flex items-start justify-between gap-4 py-3"
+                      className="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">
+                        <p className="break-words text-sm font-medium">
                           {pkg.name}
                           <span className="ml-2 font-mono text-xs text-[hsl(var(--muted-foreground))]">
                             {pkg.version ?? pkg.versionSpec ?? ''}

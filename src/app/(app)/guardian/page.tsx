@@ -407,7 +407,7 @@ function PullRequestCard({ pr }: { pr: GuardedPullRequest }) {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-mono text-xs text-[hsl(var(--muted-foreground))]">#{pr.number}</span>
-            <p className="min-w-0 flex-1 truncate text-sm font-semibold">{pr.title ?? 'Untitled pull request'}</p>
+            <p className="min-w-0 flex-1 text-sm font-semibold">{pr.title ?? 'Untitled pull request'}</p>
             {pr.riskLevel ? (
               <Badge variant={RISK_VARIANT[pr.riskLevel]}>
                 {pr.riskLevel} risk{pr.riskScore !== null ? ` · ${pr.riskScore}` : ''}
@@ -462,9 +462,9 @@ function DeliveryRow({ delivery }: { delivery: WebhookDeliverySummary }) {
         : 'outline';
 
   return (
-    <li className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0">
+    <li className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium">
+        <p className="text-sm font-medium">
           {delivery.event}
           {delivery.action ? (
             <span className="text-[hsl(var(--muted-foreground))]">.{delivery.action}</span>
@@ -472,7 +472,7 @@ function DeliveryRow({ delivery }: { delivery: WebhookDeliverySummary }) {
         </p>
         {/* The reason an event was ignored is the whole point of this log. */}
         {delivery.message ? (
-          <p className="mt-0.5 truncate text-xs text-[hsl(var(--muted-foreground))]" title={delivery.message}>
+          <p className="mt-0.5 break-words text-xs text-[hsl(var(--muted-foreground))]" title={delivery.message}>
             {delivery.message}
           </p>
         ) : null}
@@ -497,9 +497,9 @@ function JobRow({ job }: { job: ScanJobSummary }) {
           : 'outline';
 
   return (
-    <li className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0">
+    <li className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium capitalize">
+        <p className="text-sm font-medium capitalize">
           {job.trigger.replace('_', ' ')}
           {job.pullRequestNumber ? ` · #${job.pullRequestNumber}` : ''}
         </p>

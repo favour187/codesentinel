@@ -27,9 +27,9 @@ export function ArchitectureMap({
                 key={component.key}
                 className="rounded-lg border border-[hsl(var(--border))] px-4 py-3"
               >
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <h3 className="min-w-0 text-sm font-medium">{component.name}</h3>
-                  <Badge variant={RISK_VARIANT[component.riskLevel]}>{component.riskLevel}</Badge>
+                  <Badge variant={RISK_VARIANT[component.riskLevel]} className="w-fit">{component.riskLevel}</Badge>
                 </div>
                 <p className="mt-1 break-all font-mono text-xs text-[hsl(var(--muted-foreground))]">{component.rootPath}</p>
                 <dl className="mt-3 grid grid-cols-3 gap-2 text-xs">

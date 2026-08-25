@@ -28,7 +28,7 @@ export default async function TeamPage() {
         </CardHeader>
         <CardContent>
           <ul className="divide-y divide-[hsl(var(--border))]">
-            <li className="flex items-center justify-between gap-4 py-4 first:pt-0">
+            <li className="flex flex-col gap-3 py-4 first:pt-0 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 {user.avatarUrl ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
@@ -71,8 +71,8 @@ export default async function TeamPage() {
             <CardContent>
               <ul className="divide-y divide-[hsl(var(--border))]">
                 {repos.map((r) => (
-                  <li key={r.id} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
-                    <span className="truncate font-mono text-sm">{r.fullName}</span>
+                  <li key={r.id} className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                    <span className="break-all font-mono text-sm">{r.fullName}</span>
                     {r.isDemo ? <Badge variant="medium">Demo</Badge> : <Badge variant="outline">GitHub</Badge>}
                   </li>
                 ))}

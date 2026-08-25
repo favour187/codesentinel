@@ -17,9 +17,8 @@ export async function Landing({ error }: { error?: string | null }) {
     <div className="min-h-screen bg-[hsl(var(--background))]">
       <header className="mx-auto flex max-w-3xl items-center justify-between px-4 py-5 sm:px-6 sm:py-6">
         <div className="flex items-center gap-2.5">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-[hsl(var(--primary))]">
-            <ShieldCheck className="size-4 text-[hsl(var(--primary-foreground))]" aria-hidden="true" />
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon.png" alt="" width={32} height={32} className="size-8 rounded-lg" />
           <span className="text-sm font-semibold tracking-tight">CodeSentinel</span>
         </div>
       </header>

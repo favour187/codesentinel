@@ -226,6 +226,7 @@ export function FixPanel({ finding }: { finding: FindingSummary }) {
           <Button
             variant={explanation ? 'ghost' : 'secondary'}
             size="sm"
+            className="w-full sm:w-auto"
             onClick={() => void runExplain(Boolean(explanation))}
             disabled={explainPhase === 'loading'}
           >
@@ -270,6 +271,7 @@ export function FixPanel({ finding }: { finding: FindingSummary }) {
           <Button
             variant={fix ? 'ghost' : 'secondary'}
             size="sm"
+            className="w-full sm:w-auto"
             onClick={() => void runFix(Boolean(fix))}
             disabled={fixPhase === 'loading' || !finding.filePath}
           >
@@ -447,12 +449,12 @@ function Section({
 }) {
   return (
     <section className="space-y-4 border-t border-[hsl(var(--border))] pt-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 space-y-1">
           <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
           {subtitle ? <p className="text-xs text-[hsl(var(--muted-foreground))]">{subtitle}</p> : null}
         </div>
-        {action}
+        {action ? <div className="w-full shrink-0 sm:w-auto">{action}</div> : null}
       </div>
       {children}
     </section>

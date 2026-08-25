@@ -40,7 +40,7 @@ export function TestGuardianButton() {
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <Button type="button" size="sm" variant="outline" onClick={() => void run()} disabled={busy}>
+      <Button type="button" size="sm" variant="outline" className="w-full sm:w-auto" onClick={() => void run()} disabled={busy}>
         {busy ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Radar className="size-4" aria-hidden="true" />}
         {busy ? 'Sending ping…' : 'Test Guardian'}
       </Button>
