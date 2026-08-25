@@ -10,6 +10,10 @@ export const metadata: Metadata = {
   description:
     'Open-source, GitHub-connected autonomous code guardian. Continuously analyses repositories, pull requests, dependencies, tests and security risk.',
   applicationName: 'CodeSentinel',
+  icons: {
+    icon: [{ url: '/icon.png', type: 'image/png' }],
+    apple: [{ url: '/apple-icon.png', type: 'image/png' }],
+  },
   robots: { index: false, follow: false },
 };
 

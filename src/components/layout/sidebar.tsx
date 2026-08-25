@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
 import { createPortal } from 'react-dom';
-import { Menu, X, ShieldCheck } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { NAV_ITEMS } from './nav-config';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -60,9 +60,8 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 function Brand({ repoLabel }: { repoLabel?: string }) {
   return (
     <div className="flex items-center gap-2.5 px-6 py-5">
-      <div className="flex size-7 items-center justify-center rounded-md bg-[hsl(var(--primary))]">
-        <ShieldCheck className="size-4 text-[hsl(var(--primary-foreground))]" aria-hidden="true" />
-      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/icon.png" alt="" width={28} height={28} className="size-7 rounded-md" />
       <div className="min-w-0">
         <p className="text-sm font-semibold leading-none tracking-tight">CodeSentinel</p>
         {repoLabel ? (

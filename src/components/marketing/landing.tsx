@@ -1,5 +1,4 @@
 import { headers } from 'next/headers';
-import { ShieldCheck } from 'lucide-react';
 import { GitHubIcon } from '@/components/ui/icons';
 import { Button } from '@/components/ui/button';
 import { getFeatures } from '@/lib/env';

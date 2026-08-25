@@ -20,6 +20,8 @@ import { getGuardianOverview } from '@/lib/guardian-queries';
 import { getGuardianSignals } from '@/lib/guardian-risk';
 import { getLatestSnapshot } from '@/lib/analysis-queries';
 import { GuardianControlCenter } from '@/components/guardian/control-center';
+import { TestGuardianButton } from '@/components/guardian/test-guardian-button';
+import { EnableGuardianButton } from '@/components/dashboard/enable-guardian-button';
 import type { GuardedPullRequest, ScanJobSummary, WebhookDeliverySummary } from '@/lib/guardian-queries';
 import type { ReactNode } from 'react';
 import { formatDuration, timeAgo } from '@/lib/utils';
@@ -91,7 +93,9 @@ export default async function GuardianPage() {
         title="Guardian"
         description={`Continuous scanning for ${connection.fullName}.`}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+            <TestGuardianButton />
+            {!repo.isDemo && !connection.guardianEnabled ? <EnableGuardianButton repositoryId={repo.id} /> : null}
             {repo.isDemo ? <Badge variant="medium">Demo fixture</Badge> : null}
             {/* A demo repository has no event source, so "Paused" would read as
                 a fault rather than the accurate "this never applied". */}
