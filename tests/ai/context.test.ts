@@ -16,11 +16,11 @@ import { createMemory } from '@/lib/memory-queries';
 import { createTestDb, seedRepository, seedScan } from '../helpers/test-db';
 import type { TestDb } from '../helpers/test-db';
 
-/**
- * Context retrieval is what makes AI answers grounded rather than plausible.
- * These tests hold it to that: it must return real rows from the latest scan,
- * and return nothing rather than something approximate.
- */
+
+
+
+
+
 
 let db: TestDb;
 let repositoryId: string;
@@ -263,7 +263,7 @@ describe('getFileHistory', () => {
     const history = await getFileHistory(repositoryId, 'src/user.ts');
 
     expect(history).toHaveLength(1);
-    // The flag is what stops the archaeologist claiming a link that isn't there.
+
     expect(history[0]?.touchesPath).toBe(false);
   });
 

@@ -7,7 +7,7 @@ interface PageHeaderProps {
   className?: string;
 }
 
-/** Consistent page title block. Strong hierarchy, plenty of breathing room. */
+
 export function PageHeader({ title, description, actions, className }: PageHeaderProps) {
   return (
     <div className={cn('mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between', className)}>

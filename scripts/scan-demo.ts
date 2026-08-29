@@ -1,11 +1,11 @@
-/**
- * Dev utility: run a real scan against the demo fixture from the CLI.
- *
- * Same code path the UI uses (executeScan), so the numbers it prints are the
- * numbers the product produces — no separate demo path, no fabricated results.
- *
- *   npx tsx scripts/scan-demo.ts
- */
+
+
+
+
+
+
+
+
 import { and, eq } from 'drizzle-orm';
 
 import { db as getDb } from '@/db';

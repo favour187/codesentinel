@@ -5,16 +5,16 @@ import path from 'node:path';
 
 import type { SourceFile } from './types';
 
-/**
- * Repository file discovery and language detection.
- *
- * Walks a checkout, skipping vendored/generated directories and anything that
- * is binary or unreasonably large. Everything downstream operates on the
- * SourceFile[] this produces, so scanners never touch the filesystem directly
- * and are trivially testable with synthetic inputs.
- */
 
-/** Never analysed: dependencies, build output, VCS metadata, caches. */
+
+
+
+
+
+
+
+
+
 export const IGNORED_DIRECTORIES = new Set([
   '.git',
   '.hg',
@@ -41,7 +41,7 @@ export const IGNORED_DIRECTORIES = new Set([
   '.data',
 ]);
 
-/** Skip lockfiles: huge, generated, and their deps come from the manifest. */
+
 const IGNORED_FILES = new Set([
   'package-lock.json',
   'yarn.lock',
@@ -102,7 +102,7 @@ const FILENAME_LANGUAGE: Record<string, string> = {
   '.env.production': 'dotenv',
 };
 
-/** 1 MB: beyond this a "source file" is almost certainly generated data. */
+
 const MAX_FILE_BYTES = 1_000_000;
 
 export function detectLanguage(filePath: string): string {
@@ -114,7 +114,7 @@ export function detectLanguage(filePath: string): string {
   return EXTENSION_LANGUAGE[ext] ?? 'other';
 }
 
-/** Recognises the common test-file conventions across ecosystems. */
+
 export function isTestPath(filePath: string): boolean {
   const normalized = filePath.replace(/\\/g, '/').toLowerCase();
   const base = path.posix.basename(normalized);
@@ -124,37 +124,37 @@ export function isTestPath(filePath: string): boolean {
   return /(^|\/)(tests?|__tests__|spec|e2e)(\/|$)/.test(normalized);
 }
 
-/** Heuristic binary check: a NUL byte in the first 8 KB. */
+
 function looksBinary(buffer: Buffer): boolean {
   const window = buffer.subarray(0, Math.min(buffer.length, 8192));
   return window.includes(0);
 }
 
 export interface DiscoverOptions {
-  /** Hard cap so a pathological repository can't exhaust memory. */
+
   maxFiles?: number;
   maxFileBytes?: number;
 }
 
-/**
- * Recursively collects analysable files under rootDir.
- * Returned paths are repository-relative and POSIX-separated.
- */
+
+
+
+
 export async function discoverFiles(rootDir: string, options: DiscoverOptions = {}): Promise<SourceFile[]> {
   const maxFiles = options.maxFiles ?? 5000;
   const maxFileBytes = options.maxFileBytes ?? MAX_FILE_BYTES;
   const results: SourceFile[] = [];
 
-  /*
-   * The root is validated up front and hard-fails.
-   *
-   * Unreadable directories *inside* the tree are skipped so one bad permission
-   * can't lose an entire scan — but that tolerance must not extend to the root.
-   * A missing checkout, a failed clone or a bad path would otherwise walk zero
-   * files and be reported as a completed scan with no findings and a perfect
-   * health score. "We could not read your repository" and "your repository is
-   * clean" must never look the same to a user.
-   */
+
+
+
+
+
+
+
+
+
+
   try {
     const rootInfo = await stat(rootDir);
     if (!rootInfo.isDirectory()) {
@@ -173,7 +173,7 @@ export async function discoverFiles(rootDir: string, options: DiscoverOptions = 
     try {
       entries = await readdir(dir, { withFileTypes: true });
     } catch {
-      return; // unreadable directory (permissions, race) — skip, don't fail the scan
+      return;
     }
 
     for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
@@ -185,7 +185,7 @@ export async function discoverFiles(rootDir: string, options: DiscoverOptions = 
         await walk(absolute);
         continue;
       }
-      if (!entry.isFile()) continue; // symlinks are not followed
+      if (!entry.isFile()) continue;
       if (IGNORED_FILES.has(entry.name)) continue;
       if (BINARY_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) continue;
 
@@ -211,7 +211,7 @@ export async function discoverFiles(rootDir: string, options: DiscoverOptions = 
           contentHash: createHash('sha256').update(content).digest('hex').slice(0, 32),
         });
       } catch {
-        continue; // unreadable file — skip rather than abort the whole scan
+        continue;
       }
     }
   }

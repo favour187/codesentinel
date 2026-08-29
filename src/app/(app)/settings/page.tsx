@@ -49,11 +49,11 @@ function StatusRow({ icon: Icon, label, enabled, detail, envHint }: StatusRowPro
   );
 }
 
-/**
- * Settings reports the *actual* runtime configuration of this instance —
- * feature detection from validated environment variables, never a hard-coded
- * "all systems go" panel.
- */
+
+
+
+
+
 export default async function SettingsPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');

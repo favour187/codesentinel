@@ -5,11 +5,11 @@ import { TABLE_NAMES } from '@/db/bootstrap';
 import * as schema from '@/db/schema';
 import { getTableName, getTableColumns } from 'drizzle-orm';
 
-/**
- * Guards the dual-path schema strategy: bootstrap DDL (dev/test) must stay in
- * lockstep with schema.ts (which drives production drizzle-kit migrations).
- * If they drift, scans succeed locally and explode in production.
- */
+
+
+
+
+
 describe('database schema', () => {
   it('bootstrap DDL creates exactly the declared tables', async () => {
     const db = await createTestDb();
@@ -76,7 +76,7 @@ describe('database schema', () => {
       }),
     ).rejects.toThrow();
 
-    // Same name under a different source is allowed (demo vs real).
+
     await expect(
       db.insert(schema.repositories).values({
         source: 'demo',

@@ -1,21 +1,21 @@
 import type { Severity } from '@/db/schema';
 
-/**
- * Repository-wide risk engine (2.0).
- *
- * Pure arithmetic over measured signals. AI may explain the result; it must
- * never pick the band. Documented factors:
- *
- *   findings (cap 40)     critical×10 + high×5 + medium×2 + low×0.5
- *   secrets (cap 20)      each open secret finding × 8
- *   test gap (cap 15)     untestedRatio × 15
- *   dependencies (cap 15) vulnerable packages × 4
- *   architecture (cap 12) high/critical components × 3
- *   blast/sensitive (cap 10) sensitive components × 2
- *   health inversion      (100 − health) × 0.15
- *
- * Bands: ≥70 critical, ≥45 high, ≥22 medium, ≥8 low, else info.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export type RepoRiskLevel = Severity;
 

@@ -9,11 +9,11 @@ import {
 } from '@/scanner/scanners/testing';
 import { ruleIds, scanContext, sourceFile } from './helpers/source';
 
-/**
- * The testing scanner never executes the suite — it infers coverage from the
- * import graph. These tests pin both halves: the pure helpers, and the
- * gap-detection policy that decides which absences are worth reporting.
- */
+
+
+
+
+
 
 describe('countTestCases', () => {
   it('counts JS test cases across it/test and modifiers', () => {
@@ -136,8 +136,8 @@ describe('testing scanner — no test suite', () => {
 
     const findings = await testingScanner.scan(scanContext(files));
 
-    // One aggregate finding, not one per file — a repository with no tests has
-    // a single problem, and per-file noise would bury it.
+
+
     expect(findings).toHaveLength(1);
     expect(findings[0]?.ruleId).toBe('testing/no-tests');
     expect(findings[0]?.severity).toBe('high');

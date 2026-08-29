@@ -1,12 +1,12 @@
 import { cn } from '@/lib/utils';
 
-/**
- * Renders a unified diff.
- *
- * Colour alone never carries the meaning — every line keeps its `+`/`-`
- * marker, so the diff is still readable when copied as plain text, printed, or
- * viewed by someone who cannot distinguish the two hues.
- */
+
+
+
+
+
+
+
 export function DiffView({ patch, className }: { patch: string; className?: string }) {
   const lines = patch.split('\n');
 
@@ -46,8 +46,8 @@ export function DiffView({ patch, className }: { patch: string; className?: stri
 type LineKind = 'add' | 'remove' | 'meta' | 'hunk' | 'context';
 
 function classify(line: string): LineKind {
-  // Order matters: the `---`/`+++` file headers start with the same characters
-  // as removed/added lines and must be checked first.
+
+
   if (line.startsWith('---') || line.startsWith('+++')) return 'meta';
   if (line.startsWith('@@')) return 'hunk';
   if (line.startsWith('+')) return 'add';
@@ -55,7 +55,7 @@ function classify(line: string): LineKind {
   return 'context';
 }
 
-/** Line-numbered code block for showing a file excerpt. */
+
 export function CodeBlock({
   code,
   startLine = 1,

@@ -5,21 +5,21 @@ import type { TestGap } from '@/testing/gaps';
 import { prioritizeTests } from '@/testing/prioritize';
 import type { PrioritizedTest } from '@/testing/prioritize';
 
-/**
- * Change-impact preview: "what could this change affect?" before it merges.
- *
- * This is the pre-merge face of the impact engine. It runs the same
- * deterministic traversal as blast radius, then adds the two things a reviewer
- * asks next — which risks apply, and which tests to run — so the answer is one
- * object rather than three calls the UI has to stitch together.
- *
- * Everything is derived from the Digital Twin and stored scan records. Nothing
- * is inferred by a model, and every risk factor names the evidence behind it.
- */
+
+
+
+
+
+
+
+
+
+
+
 
 export interface RiskFactor {
   readonly label: string;
-  /** Why this factor fired, in terms of what was actually found. */
+
   readonly detail: string;
   readonly weight: 'low' | 'medium' | 'high';
 }
@@ -30,7 +30,7 @@ export interface ChangeImpactPreview {
   readonly impactLevel: ImpactAnalysis['impactLevel'];
   readonly impactScore: number;
   readonly changedFiles: readonly string[];
-  /** Files that could break, nearest first. */
+
   readonly affectedFiles: ReadonlyArray<{ path: string; depth: number; evidence: string | null }>;
   readonly affectedApis: ReadonlyArray<{ route: string; filePath: string }>;
   readonly affectedComponents: ReadonlyArray<{ key: string; fileCount: number }>;
@@ -41,12 +41,12 @@ export interface ChangeImpactPreview {
   readonly truncated: boolean;
 }
 
-/**
- * Preview the impact of a set of changed files.
- *
- * Takes paths rather than a target so it works for an uncommitted diff, a
- * branch, or a PR the guardian has not recorded yet.
- */
+
+
+
+
+
+
 export async function previewChangeImpact(
   repositoryId: string,
   changedFiles: readonly string[],
@@ -69,12 +69,12 @@ export async function previewChangeImpact(
     };
   }
 
-  /*
-   * Each changed file is analysed on its own and the radii are merged. A
-   * single traversal seeded with all of them would be cheaper, but it loses
-   * per-file depth: a file that directly imports change A and is four hops
-   * from change B is a direct dependent, and merging keeps that.
-   */
+
+
+
+
+
+
   const analyses: ImpactAnalysis[] = [];
   for (const path of changedFiles.slice(0, 50)) {
     analyses.push(await analyseImpact(repositoryId, { type: 'file', value: path }));
@@ -103,7 +103,7 @@ export async function previewChangeImpact(
 
   const changedSet = new Set(changedFiles);
 
-  // Nearest depth wins when several changed files reach the same dependent.
+
   const affected = new Map<string, { path: string; depth: number; evidence: string | null }>();
   for (const analysis of resolvedAnalyses) {
     for (const dep of [...analysis.directDependents, ...analysis.indirectDependents]) {
@@ -156,12 +156,12 @@ export async function previewChangeImpact(
   };
 }
 
-/**
- * The risk factors that apply to this change.
- *
- * Each one states what was found rather than a score, because a reviewer acts
- * on "this touches authentication and has no tests", not on "risk: 63".
- */
+
+
+
+
+
+
 function collectRiskFactors(
   analyses: readonly ImpactAnalysis[],
   changedFiles: readonly string[],

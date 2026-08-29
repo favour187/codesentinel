@@ -6,16 +6,16 @@ import { runScan } from '@/scanner/orchestrator';
 import { getScanner, SCANNERS } from '@/scanner/registry';
 import type { Finding, Scanner, ScanContext } from '@/scanner/types';
 
-/**
- * Orchestration contract.
- *
- * The orchestrator's job is resilience and honesty: one discovery pass, one
- * scanner failure must not lose the others, and a scanner that could not run
- * must be reported as `skipped` rather than silently as "found nothing".
- *
- * These tests run against a real temporary repository on disk, so discovery,
- * scanning and scoring all execute for real.
- */
+
+
+
+
+
+
+
+
+
+
 
 let repoDir: string;
 
@@ -151,8 +151,8 @@ describe('runScan — real repository', () => {
     const result = await runScan({ repositoryId: 'repo-1', rootDir: repoDir });
 
     expect(result.vulnerabilityProvider).toBeTruthy();
-    // The fixture pins a known-vulnerable lodash, so the provider must have
-    // been consulted and its answer captured for persistence.
+
+
     expect(result.vulnerabilities.size).toBeGreaterThan(0);
     expect(result.vulnerabilities.has('npm:lodash')).toBe(true);
   });
@@ -164,7 +164,7 @@ describe('runScan — real repository', () => {
 
       expect(result.findings).toEqual([]);
       expect(result.stats.fileCount).toBe(0);
-      // A repository with nothing in it is not unhealthy.
+
       expect(result.scores.health).toBe(100);
     } finally {
       await rm(empty, { recursive: true, force: true });
@@ -192,7 +192,7 @@ describe('runScan — resilience', () => {
     expect(failed?.message).toContain('rule blew up');
     expect(failed?.findings).toBe(0);
 
-    // The healthy scanner still contributed.
+
     const ok = result.runs.find((r) => r.id === 'security');
     expect(ok?.status).toBe('ok');
     expect(result.findings.length).toBeGreaterThan(0);

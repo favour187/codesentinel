@@ -1,12 +1,12 @@
-/**
- * Registers the bundled demo fixture as a repository owned by the demo user.
- *
- * This seeds ONLY the repository record — it deliberately does NOT insert any
- * findings, scores or scans. Those must be produced by actually running the
- * scanners against ./fixtures/demo-repo, so demo output is never fabricated.
- *
- * Usage: npm run db:seed
- */
+
+
+
+
+
+
+
+
+
 import { and, eq } from 'drizzle-orm';
 import { getDb } from '../src/db/index';
 import { repositories, repositoryPolicies } from '../src/db/schema';

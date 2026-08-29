@@ -1,12 +1,12 @@
 import type { RiskFactor } from '@/guardian/risk';
 
-/**
- * The risk score breakdown.
- *
- * A number with no explanation is a number nobody trusts. Every point in the
- * score maps to a named factor here, so a developer can see exactly why their
- * pull request was flagged — and argue with it if the reasoning is wrong.
- */
+
+
+
+
+
+
+
 export function RiskFactors({ factors }: { factors: readonly RiskFactor[] }) {
   if (factors.length === 0) {
     return (

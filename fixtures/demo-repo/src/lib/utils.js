@@ -1,7 +1,7 @@
-// DEMO FIXTURE — quality issues.
+
 const _ = require('lodash');
 
-// Deeply nested, high-complexity function (10 levels of control flow)
+
 function processOrder(order, user, settings, flags) {
   if (order) {
     if (order.items) {
@@ -28,7 +28,7 @@ function processOrder(order, user, settings, flags) {
 }
 
 function merge(a, b) {
-  // Prototype pollution risk via unsafe deep merge of untrusted input
+
   return _.merge({}, a, b);
 }
 

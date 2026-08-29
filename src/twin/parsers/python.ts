@@ -9,20 +9,20 @@ import {
   type ParsedSymbol,
 } from './types';
 
-/**
- * Python parser.
- *
- * Python has no equivalent of the TypeScript compiler available to a Node
- * process, and shelling out to `python -c "import ast"` would mean executing
- * an interpreter against untrusted repository content — exactly what the
- * security rules forbid, and an environment dependency besides. So this is a
- * structural reader: it tracks indentation to find declaration boundaries,
- * which is reliable for Python precisely because indentation *is* the syntax.
- *
- * It is honest about its limits. Anything that cannot be read structurally
- * (dynamic attribute access, metaclasses, runtime route registration) simply
- * produces no symbol rather than a guessed one.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const DEF_RE = /^(?<indent>\s*)(?<async>async\s+)?def\s+(?<name>[A-Za-z_]\w*)\s*\((?<params>[^)]*)/;
 const CLASS_RE = /^(?<indent>\s*)class\s+(?<name>[A-Za-z_]\w*)\s*(?:\(([^)]*)\))?\s*:/;
@@ -30,11 +30,11 @@ const IMPORT_RE = /^\s*import\s+(?<mods>[\w.,\s]+)$/;
 const FROM_IMPORT_RE = /^\s*from\s+(?<mod>[.\w]+)\s+import\s+(?<names>\*|[\w,\s()]+)/;
 const ASSIGN_RE = /^(?<indent>[ \t]*)(?<name>[A-Z_][A-Z0-9_]{2,})\s*(?::[^=]+)?=\s*\S/;
 
-/** Flask/FastAPI style: @app.get('/x'), @router.route('/x', methods=[...]). */
+
 const DECORATOR_ROUTE_RE =
   /^\s*@(?<recv>\w+)\.(?<method>get|post|put|patch|delete|head|options|route)\s*\(\s*(?<quote>['"])(?<path>[^'"]+)\k<quote>(?<rest>[^)]*)/;
 
-/** Django urls.py: path('x/', view) / re_path(r'^x$', view). */
+
 const DJANGO_PATH_RE = /^\s*(?:re_)?path\s*\(\s*(?<quote>['"])(?<path>[^'"]*)\k<quote>/;
 
 const SQL_STATEMENT =
@@ -43,17 +43,17 @@ const SQL_STATEMENT =
 const DB_MODULES =
   /^(psycopg2?|sqlite3|pymysql|mysql|asyncpg|sqlalchemy|django\.db|pymongo|motor|redis|peewee|tortoise)(\.|$)/;
 
-/**
- * Django-style `Model.objects.filter(...)` — the model name IS the table, so
- * this is the one Python ORM shape where a target can be named honestly.
- */
+
+
+
+
 const DJANGO_ORM_RE = /\b([A-Z]\w*)\.objects\.(?:get|filter|all|create|update|delete|exclude|count)\s*\(/;
 
-/**
- * Cursor/session/collection access. These prove a database is touched but the
- * receiver is a connection or cursor variable, not a table, so the target is
- * left null rather than reporting `cur` or `conn` as a table name.
- */
+
+
+
+
+
 const GENERIC_DB_CALL_RE =
   /\b\w+\.(query|execute|executemany|fetchall|fetchone|find_one|insert_one|update_one|delete_one|bulk_write)\s*\(/;
 
@@ -77,7 +77,7 @@ function indentWidth(indent: string): number {
   return width;
 }
 
-/** Strip comments and string bodies so braces/keywords inside them don't count. */
+
 function stripLiterals(line: string): string {
   return line.replace(/(['"])(?:\\.|(?!\1).)*\1/g, '""').replace(/#.*$/, '');
 }
@@ -118,7 +118,7 @@ class PythonParser implements LanguageParser {
     const open: OpenBlock[] = [];
     let inTripleQuote: false | string = false;
 
-    /** Trailing blanks, comments and decorators belong to the NEXT block. */
+
     const trimEnd = (endLine: number, startLine: number): number => {
       let end = endLine;
       while (end > startLine) {
@@ -139,7 +139,7 @@ class PythonParser implements LanguageParser {
           kind: top.kind,
           lineStart: top.startLine,
           lineEnd: trimEnd(endLine, top.startLine),
-          // Python has no export keyword: module-level and non-underscore is public.
+
           isExported: top.parentName === null && !top.name.startsWith('_'),
           isAsync: top.isAsync,
           parameters: top.parameters,
@@ -155,7 +155,7 @@ class PythonParser implements LanguageParser {
       const raw = lines[i] ?? '';
       const lineNo = i + 1;
 
-      /* Triple-quoted strings: scan for SQL, skip structural parsing. */
+
       if (inTripleQuote) {
         if (raw.includes(inTripleQuote)) inTripleQuote = false;
         const sqlMatch = SQL_STATEMENT.exec(raw);
@@ -177,7 +177,7 @@ class PythonParser implements LanguageParser {
       const code = stripLiterals(raw);
       if (code.trim().length === 0 && !raw.includes('@')) continue;
 
-      /* ---------------- imports ---------------- */
+
       const fromImport = FROM_IMPORT_RE.exec(raw);
       if (fromImport?.groups) {
         const mod = fromImport.groups['mod'] ?? '';
@@ -209,7 +209,7 @@ class PythonParser implements LanguageParser {
         }
       }
 
-      /* ---------------- routes ---------------- */
+
       const decorated = DECORATOR_ROUTE_RE.exec(raw);
       if (decorated?.groups) {
         const method = (decorated.groups['method'] ?? '').toLowerCase();
@@ -238,7 +238,7 @@ class PythonParser implements LanguageParser {
         });
       }
 
-      /* ---------------- database ---------------- */
+
       const sqlMatch = SQL_STATEMENT.exec(raw);
       if (sqlMatch) {
         databaseUses.push({
@@ -257,8 +257,8 @@ class PythonParser implements LanguageParser {
           evidence: raw.trim().replace(/\s+/g, ' ').slice(0, 120),
         });
       } else if (GENERIC_DB_CALL_RE.test(code) && !sqlMatch) {
-        // Only when no SQL literal was already recorded on this line, so a
-        // `cur.execute("SELECT …")` produces one use, not two.
+
+
         databaseUses.push({
           target: null,
           via: 'orm',
@@ -267,7 +267,7 @@ class PythonParser implements LanguageParser {
         });
       }
 
-      /* ---------------- declarations ---------------- */
+
       const classMatch = CLASS_RE.exec(raw);
       const defMatch = DEF_RE.exec(raw);
 
@@ -306,7 +306,7 @@ class PythonParser implements LanguageParser {
         continue;
       }
 
-      /* Module-level CONSTANTS are part of the public surface. */
+
       const assign = ASSIGN_RE.exec(raw);
       if (assign?.groups && indentWidth(assign.groups['indent'] ?? '') === 0 && open.length === 0) {
         const name = assign.groups['name'] ?? '';
@@ -325,7 +325,7 @@ class PythonParser implements LanguageParser {
         if (!name.startsWith('_')) exports.push(name);
       }
 
-      /* Body lines: attribute complexity and calls to the innermost block. */
+
       const top = open[open.length - 1];
       if (top && indentWidth(/^\s*/.exec(raw)?.[0] ?? '') > top.indent) {
         if (BRANCH_RE.test(code)) top.complexity += 1;
@@ -334,7 +334,7 @@ class PythonParser implements LanguageParser {
     }
 
     closeTo(0, lines.length);
-    // closeTo(0, …) leaves indent-0 blocks open; flush them.
+
     while (open.length > 0) {
       const top = open.pop();
       if (!top) break;
@@ -373,7 +373,7 @@ class PythonParser implements LanguageParser {
     while ((match = re.exec(code)) !== null) {
       const callee = match[2];
       if (!callee) continue;
-      // Keywords that look like calls but are not.
+
       if (/^(if|for|while|return|print|def|class|with|except|and|or|not|in|elif)$/.test(callee)) continue;
       yield { callee, receiver: match[1] ?? null, line, enclosingSymbol: enclosing };
     }

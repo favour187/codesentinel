@@ -88,8 +88,8 @@ describe('security scanner — false positives', () => {
   });
 
   it('ignores unsafe patterns inside test files', async () => {
-    // Test fixtures legitimately contain unsafe strings; flagging them trains
-    // developers to ignore the tool.
+
+
     const file = sourceFile(
       'tests/injection.test.js',
       "it('rejects injection', () => {\n  expect(() => eval('1+1')).toBeDefined();\n});",
@@ -129,8 +129,8 @@ describe('security scanner — false positives', () => {
 
 describe('security scanner — reporting behaviour', () => {
   it('reports every occurrence, not just the first in a file', async () => {
-    // Collapsing to one finding per file turns remediation into whack-a-mole:
-    // the developer fixes line 2, re-scans, and a "new" critical appears.
+
+
     const findings = await scanSource(
       securityScanner,
       'src/users.js',
@@ -159,7 +159,7 @@ describe('security scanner — reporting behaviour', () => {
   });
 
   it('anchors the finding to the line carrying the vulnerability', async () => {
-    // A window opening on "try {" must not report "try {" as the evidence.
+
     const findings = await scanSource(
       securityScanner,
       'src/users.js',

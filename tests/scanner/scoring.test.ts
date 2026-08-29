@@ -53,8 +53,8 @@ describe('deductionToScore', () => {
   });
 
   it('never increases as more problems are found', () => {
-    // Displayed scores are rounded to one decimal, so far out in the tail
-    // consecutive steps legitimately tie. The guarantee is non-increasing.
+
+
     let previous = deductionToScore(0);
     for (let deduction = 5; deduction <= 400; deduction += 5) {
       const score = deductionToScore(deduction);
@@ -64,8 +64,8 @@ describe('deductionToScore', () => {
   });
 
   it('stays responsive across the range where repositories actually sit', () => {
-    // The point of the saturating curve: a bad repository must still show
-    // visible progress when issues are fixed, instead of pinning at the floor.
+
+
     let previous = deductionToScore(0);
     for (let deduction = 5; deduction <= 150; deduction += 5) {
       const score = deductionToScore(deduction);
@@ -121,7 +121,7 @@ describe('calculateScores', () => {
       stats(5_000),
     );
     expect(testingOnly.testing).toBeLessThan(100);
-    // A testing gap must not masquerade as a security problem.
+
     expect(testingOnly.security).toBe(100);
   });
 
@@ -164,9 +164,9 @@ describe('scoreGrade', () => {
   });
 
   it('never calls a repository with an open critical finding healthy', () => {
-    // The weighted mean can sit in the high 80s while a critical RCE is open,
-    // because good tests and performance average the number back up. The
-    // headline label must not launder that away.
+
+
+
     const counts = { critical: 1, high: 0, medium: 0, low: 0, info: 0 };
     const grade = scoreGrade(92, counts);
     expect(grade.label).toBe('At risk');
@@ -185,8 +185,8 @@ describe('scoreGrade', () => {
   });
 
   it('keeps the numeric score responsive even when the grade is pinned', () => {
-    // Grade is gated, but the number must still improve as issues are fixed,
-    // otherwise progress on a bad repository is invisible.
+
+
     const many = calculateScores(
       Array.from({ length: 10 }, (_, i) => finding('critical', i)),
       stats(5_000),

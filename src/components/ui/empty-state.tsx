@@ -9,11 +9,11 @@ interface EmptyStateProps {
   className?: string;
 }
 
-/**
- * Consistent empty state. Every list surface uses this instead of rendering
- * nothing, so a new user always understands what should be here and how to
- * populate it.
- */
+
+
+
+
+
 export function EmptyState({ icon: Icon, title, description, action, className }: EmptyStateProps) {
   return (
     <div

@@ -4,10 +4,10 @@ import { listRepositoriesForUser } from '@/lib/repositories';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * Authenticated shell. Overview renders the public landing when there is no
- * session; other pages still send visitors to sign-in.
- */
+
+
+
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
   if (!user) {

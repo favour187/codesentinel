@@ -3,18 +3,18 @@ import { getDb } from '@/db';
 import { repositoryMemory } from '@/db/schema';
 import type { MemoryKind } from '@/db/schema';
 
-/**
- * Item 12: repository memory.
- *
- * Facts a team wants CodeSentinel to remember: architecture decisions,
- * intentional exceptions, accepted risks, policies, conventions.
- *
- * These rows are authoritative and are injected into AI prompts as trusted
- * context. That is exactly why **only a human can create one**. There is no
- * code path anywhere that lets a model write here — if an AI guess could
- * become a remembered rule, a single hallucination would silently poison every
- * later analysis.
- */
+
+
+
+
+
+
+
+
+
+
+
+
 
 export interface MemoryEntry {
   readonly id: string;
@@ -73,7 +73,7 @@ export interface MemoryInput {
   readonly kind: MemoryKind;
   readonly title: string;
   readonly body: string;
-  /** Empty means the fact applies to the whole repository. */
+
   readonly paths?: readonly string[];
   readonly expiresAt?: Date | null;
 }
@@ -85,7 +85,7 @@ export class MemoryValidationError extends Error {
   }
 }
 
-/** Bounds that keep one entry from consuming the entire prompt budget. */
+
 const MAX_TITLE = 200;
 const MAX_BODY = 4000;
 const MAX_PATHS = 25;

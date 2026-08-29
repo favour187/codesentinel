@@ -1,4 +1,4 @@
-# DEMO FIXTURE — intentionally insecure infrastructure config.
+
 FROM node:14
 USER root
 ENV API_TOKEN=ghp_democcccccccccccccccccccccccccccccccc

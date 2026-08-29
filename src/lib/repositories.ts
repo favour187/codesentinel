@@ -18,7 +18,7 @@ export interface RepositorySummary {
   isDemo: boolean;
 }
 
-/** Repositories the user owns or is an explicit member of. */
+
 export async function listRepositoriesForUser(userId: string): Promise<RepositorySummary[]> {
   const database = await db();
 
@@ -48,10 +48,10 @@ export async function getRepositoryById(id: string): Promise<RepositorySummary |
   return row ? toSummary(row) : null;
 }
 
-/**
- * Resolve the repository a page should render: the explicitly requested one, or
- * the user's most recently scanned repository.
- */
+
+
+
+
 export async function resolveActiveRepository(
   userId: string,
   requestedId?: string,
@@ -172,7 +172,7 @@ export async function connectGitHubRepository(
   return toSummary(fresh ?? created);
 }
 
-/** Attach a GitHub App installation and turn Guardian on for a connected repo. */
+
 export async function activateGuardianForConnectedRepo(
   owner: string,
   name: string,

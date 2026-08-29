@@ -10,11 +10,11 @@ import {
   IGNORED_DIRECTORIES,
 } from '@/scanner/discovery';
 
-/**
- * Discovery is the single point where the product touches a checkout, so its
- * failure behaviour is a correctness concern, not an ergonomic one: an
- * unreadable repository must never be indistinguishable from a clean one.
- */
+
+
+
+
+
 
 let root: string;
 
@@ -33,7 +33,7 @@ beforeAll(async () => {
   await writeFile(path.join(root, 'Dockerfile'), 'FROM node:22-alpine\n');
   await writeFile(path.join(root, 'package.json'), '{"name":"x"}\n');
 
-  // Must all be skipped.
+
   await writeFile(path.join(root, 'package-lock.json'), '{"lockfileVersion":3}\n');
   await writeFile(path.join(root, 'node_modules', 'left-pad', 'index.js'), 'module.exports = 1;\n');
   await writeFile(path.join(root, 'dist', 'bundle.js'), 'var a=1;\n');
@@ -117,7 +117,7 @@ describe('discoverFiles', () => {
 
     expect(paths).not.toContain('package-lock.json');
     expect(paths).not.toContain('logo.png');
-    // Detected by the NUL-byte heuristic rather than the extension list.
+
     expect(paths).not.toContain('data.bin');
   });
 
@@ -128,7 +128,7 @@ describe('discoverFiles', () => {
 
     expect(app?.language).toBe('typescript');
     expect(app?.isTest).toBe(false);
-    // Blank lines are not counted.
+
     expect(app?.loc).toBe(2);
     expect(app?.lines.length).toBeGreaterThanOrEqual(3);
     expect(app?.contentHash).toMatch(/^[0-9a-f]{32}$/);
@@ -178,13 +178,13 @@ describe('discoverFiles', () => {
 });
 
 describe('discoverFiles — unreadable root', () => {
-  /*
-   * The regression these guard: unreadable directories inside the tree are
-   * skipped so one bad permission cannot lose a whole scan, and that tolerance
-   * used to extend to the root. A missing checkout then walked zero files and
-   * was reported as a completed scan with a perfect health score — "we could
-   * not read your repository" rendered as "your repository is clean".
-   */
+
+
+
+
+
+
+
   it('throws when the root does not exist', async () => {
     await expect(discoverFiles(path.join(tmpdir(), 'codesentinel-does-not-exist-xyz'))).rejects.toThrow(
       /not readable/i,
@@ -201,8 +201,8 @@ describe('discoverFiles — unreadable root', () => {
       await writeFile(path.join(tree, 'ok.js'), 'const a = 1;\n');
       await mkdir(path.join(tree, 'locked'), { recursive: true });
       await writeFile(path.join(tree, 'locked', 'hidden.js'), 'const b = 2;\n');
-      // 0o000 is not honoured when running as root, so assert the tolerant
-      // behaviour without depending on the permission actually biting.
+
+
       const files = await discoverFiles(tree);
       expect(files.some((f) => f.path === 'ok.js')).toBe(true);
     } finally {

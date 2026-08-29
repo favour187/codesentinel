@@ -5,13 +5,13 @@ import { createGroqProvider } from '@/ai/providers/groq';
 import { AIProviderError } from '@/ai/provider';
 import { resetEnvCache } from '@/lib/env';
 
-/**
- * Provider abstraction tests.
- *
- * Every call is served by an injected fetch. Nothing in this suite touches the
- * network, and the suite must pass with no API keys configured — which is also
- * the state a contributor's machine is in.
- */
+
+
+
+
+
+
+
 
 function chatResponse(content: string, usage?: { prompt_tokens: number; completion_tokens: number }) {
   return new Response(

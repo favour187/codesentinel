@@ -12,10 +12,10 @@ import { handleWebhook } from '@/guardian/webhook-handler';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/**
- * Signed-in smoke test: turn Guardian on if the App is present, then record a
- * real `ping` delivery so the Guardian page shows activity. Nothing is faked.
- */
+
+
+
+
 export async function POST(): Promise<NextResponse> {
   try {
     const user = await requireUser();

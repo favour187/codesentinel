@@ -14,15 +14,15 @@ interface SidebarProps {
   isDemo?: boolean;
 }
 
-/**
- * Navigation is split into two components on purpose.
- *
- * `Sidebar` is the desktop rail and `MobileNav` is the trigger + drawer. An
- * earlier version rendered one component in both slots, which mounted two
- * hamburger buttons and two `<nav aria-label="Main navigation">` landmarks —
- * a visible stray button on mobile and an ambiguous landmark for screen
- * readers. Each element now has exactly one instance in the tree.
- */
+
+
+
+
+
+
+
+
+
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -84,7 +84,7 @@ function DemoFooter({ isDemo }: { isDemo?: boolean }) {
   );
 }
 
-/** Desktop navigation rail. Hidden below the `lg` breakpoint. */
+
 export function Sidebar({ repoLabel, isDemo }: SidebarProps) {
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-[hsl(var(--border))] bg-[hsl(var(--surface))] lg:flex">
@@ -95,12 +95,12 @@ export function Sidebar({ repoLabel, isDemo }: SidebarProps) {
   );
 }
 
-/** Mobile trigger + off-canvas drawer. Hidden at `lg` and above. */
+
 export function MobileNav({ repoLabel, isDemo }: SidebarProps) {
   const pathname = usePathname();
   const [open, setOpen] = React.useState(false);
 
-  // Close on route change so the drawer never covers the new page.
+
   React.useEffect(() => setOpen(false), [pathname]);
 
   React.useEffect(() => {
@@ -117,10 +117,10 @@ export function MobileNav({ repoLabel, isDemo }: SidebarProps) {
     };
   }, [open]);
 
-  // The trigger lives inside a `backdrop-blur` header, which establishes a
-  // containing block for fixed-position descendants. Rendering the drawer in
-  // place clipped it to the 55px header instead of the viewport, so it is
-  // portalled to <body>.
+
+
+
+
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
 

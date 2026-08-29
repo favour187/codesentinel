@@ -1,12 +1,12 @@
 import { createFinding } from '../finding';
 import type { Finding, ScanContext, Scanner, SourceFile } from '../types';
 
-/**
- * Configuration guardian.
- *
- * Looks at env, package and compose files for obvious risky settings.
- * Secret values are redacted. Never prints the original credential.
- */
+
+
+
+
+
+
 
 const SCANNER_ID = 'config';
 

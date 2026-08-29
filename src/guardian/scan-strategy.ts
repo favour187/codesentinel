@@ -1,10 +1,10 @@
-/**
- * Targeted scanner selection.
- *
- * A full scan is always valid. When we know which paths changed, skip
- * scanners that cannot produce a finding on those paths. Safety first:
- * unknown or mixed changes fall back to every scanner.
- */
+
+
+
+
+
+
+
 
 export const ALL_SCANNER_IDS = [
   'secrets',

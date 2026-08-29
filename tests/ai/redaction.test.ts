@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { neutralizeInjection, redactSecrets, sanitizeRepositoryContent } from '@/ai/redaction';
 
-/**
- * Redaction is a security boundary: repository content routinely contains real
- * credentials, and this is the last thing that runs before text leaves the
- * process toward a third-party inference API.
- *
- * The fixtures below use well-known documentation/example values, never real
- * credentials.
- */
+
+
+
+
+
+
+
+
 
 describe('redactSecrets', () => {
   const cases: Array<{ name: string; input: string; secret: string; rule: string }> = [

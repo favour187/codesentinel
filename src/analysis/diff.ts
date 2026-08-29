@@ -1,12 +1,12 @@
-/**
- * Unified diff generation and validation.
- *
- * A generated fix is only trustworthy if the "before" text it claims to
- * replace is actually in the file. Everything here exists to enforce that: the
- * diff is computed by us from verified content, never taken from the model's
- * own diff output, which is frequently misnumbered even when the code change
- * is correct.
- */
+
+
+
+
+
+
+
+
+
 
 export interface DiffHunk {
   readonly oldStart: number;
@@ -31,17 +31,17 @@ export class DiffError extends Error {
   }
 }
 
-/**
- * Locate `snippet` inside `content`, tolerating indentation drift.
- *
- * Models reproduce code with the leading whitespace subtly altered often
- * enough that exact matching alone would reject many correct fixes. Exact
- * matching is tried first; the indentation-insensitive pass is a fallback and
- * still requires every line to match after trimming, so it cannot silently
- * patch the wrong region.
- *
- * Returns the 0-based line index, or -1.
- */
+
+
+
+
+
+
+
+
+
+
+
 export function locateSnippet(content: string, snippet: string): number {
   const contentLines = content.split('\n');
   const snippetLines = snippet.replace(/\s+$/, '').split('\n');
@@ -63,13 +63,13 @@ export function locateSnippet(content: string, snippet: string): number {
   return -1;
 }
 
-/**
- * Apply a snippet replacement and produce a verified unified diff.
- *
- * Throws when the original snippet is not present: that means the model
- * invented the code it claims to be fixing, and the only safe response is to
- * refuse rather than to guess a location.
- */
+
+
+
+
+
+
+
 export function createUnifiedDiff(options: {
   path: string;
   content: string;
@@ -94,11 +94,11 @@ export function createUnifiedDiff(options: {
   const originalLines = originalCode.replace(/\s+$/, '').split('\n');
   const fixedLines = fixedCode.replace(/\s+$/, '').split('\n');
 
-  /*
-   * Re-apply the original indentation. When the snippet matched only after
-   * trimming, the replacement would otherwise be flush-left and mangle the
-   * file even though the change itself is right.
-   */
+
+
+
+
+
   const originalIndent = leadingWhitespace(contentLines[startLine] ?? '');
   const fixedIndent = leadingWhitespace(fixedLines[0] ?? '');
   const reindented =
@@ -153,13 +153,13 @@ export function createUnifiedDiff(options: {
   };
 }
 
-/**
- * Sanity-check a patch before it is ever shown as applicable.
- *
- * These are cheap structural checks, not a substitute for human review — which
- * is required regardless. They catch the failure modes that would otherwise
- * waste a reviewer's time or, worse, look plausible.
- */
+
+
+
+
+
+
+
 export function validatePatch(options: {
   originalContent: string;
   patchedContent: string;
@@ -185,7 +185,7 @@ export function validatePatch(options: {
     if (balance) problems.push(balance);
   }
 
-  // A fix that introduces a literal secret is worse than the finding it closes.
+
   if (/(sk_live_|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----)/.test(patchedContent)) {
     problems.push('The patched content appears to contain a hardcoded credential.');
   }
@@ -198,13 +198,13 @@ export function validatePatch(options: {
   return { valid: problems.length === 0, problems };
 }
 
-/**
- * Bracket balance check.
- *
- * Deliberately not a parser: it must work for several languages and only needs
- * to catch the common truncated-output failure. Strings and comments are
- * skipped so their contents cannot produce a false alarm.
- */
+
+
+
+
+
+
+
 function checkBalance(source: string): string | null {
   const pairs: Record<string, string> = { '(': ')', '[': ']', '{': '}' };
   const closers = new Set([')', ']', '}']);

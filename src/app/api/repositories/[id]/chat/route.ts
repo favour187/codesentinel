@@ -4,13 +4,13 @@ import { askCodebase } from '@/ai/tasks/codebase-chat';
 import { countRecentRequests } from '@/lib/ai-queries';
 import { aiErrorResponse, errorResponse, readJsonBody, requireString, withRepositoryAccess } from '@/lib/api';
 
-/**
- * Codebase Intelligence: answer a question about this repository.
- *
- * Rate-limited per repository. Every question costs an inference call, and an
- * open text box is the easiest place in the product to run up a bill by
- * accident or on purpose.
- */
+
+
+
+
+
+
+
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

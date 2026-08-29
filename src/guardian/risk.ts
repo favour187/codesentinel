@@ -2,36 +2,36 @@ import type { Severity } from '@/db/schema';
 import type { Finding } from '@/scanner/types';
 import type { PullRequestFile } from '@/github/client';
 
-/**
- * Deterministic pull-request risk assessment.
- *
- * This is arithmetic over the diff and the finding delta — no LLM. Two runs on
- * the same PR always produce the same number, which is what makes it fit to
- * gate a merge. Every point is attributed to a named factor so the UI and the
- * PR comment can explain *why* a PR is risky instead of showing a bare score.
- *
- * The score is intentionally NOT the health score: health answers "how is the
- * repository doing?", risk answers "how dangerous is merging this change?".
- */
+
+
+
+
+
+
+
+
+
+
+
 
 export interface RiskFactor {
   id: string;
   label: string;
-  /** Contribution to the 0..100 risk score. */
+
   points: number;
   detail: string;
 }
 
 export interface BlastRadius {
-  /** Files directly edited by the PR. */
+
   changedFiles: string[];
-  /** Files that import a changed file (first-order dependents). */
+
   impactedFiles: string[];
-  /** Architectural areas touched, e.g. "auth", "routes", "config". */
+
   affectedComponents: string[];
-  /** Test files covering changed or impacted files. */
+
   coveringTests: string[];
-  /** Changed source files with no covering test — the dangerous set. */
+
   uncoveredChanges: string[];
 }
 
@@ -42,13 +42,13 @@ export interface PullRequestRisk {
   blastRadius: BlastRadius;
   newFindings: Finding[];
   resolvedFingerprints: string[];
-  /** Whether policy says this PR should block the merge. */
+
   shouldBlock: boolean;
   recommendedTests: string[];
   summary: string;
 }
 
-/** Severity weights for findings introduced by the PR. */
+
 const NEW_FINDING_POINTS: Record<Severity, number> = {
   critical: 30,
   high: 15,
@@ -57,7 +57,7 @@ const NEW_FINDING_POINTS: Record<Severity, number> = {
   info: 0.5,
 };
 
-/** Paths whose modification carries inherent risk regardless of diff size. */
+
 const SENSITIVE_PATTERNS: Array<{ pattern: RegExp; label: string; points: number }> = [
   { pattern: /(^|\/)(auth|authn|authz|session|login|permission|role)/i, label: 'authentication/authorization', points: 12 },
   { pattern: /(^|\/)(payment|billing|charge|invoice|checkout)/i, label: 'payment handling', points: 12 },
@@ -79,17 +79,17 @@ const SEVERITY_FLOOR: Array<{ min: number; level: Severity }> = [
 
 export interface AssessRiskInput {
   files: PullRequestFile[];
-  /** Findings present on the PR head that were absent from the base scan. */
+
   newFindings: Finding[];
-  /** Fingerprints present on base but gone on head. */
+
   resolvedFingerprints: string[];
-  /** Import graph of the head tree: file path -> internal imports. */
+
   importGraph?: Map<string, string[]>;
-  /** All known test file paths in the head tree. */
+
   testFiles?: string[];
-  /** Severity at/above which policy blocks the merge. */
+
   failOnSeverity?: Severity;
-  /** True when the diff was too large to fetch completely. */
+
   truncatedDiff?: boolean;
 }
 
@@ -114,15 +114,15 @@ export function assessPullRequestRisk(input: AssessRiskInput): PullRequestRisk {
   const changedFiles = files.filter((f) => f.status !== 'removed').map((f) => f.filename);
   const allTouched = files.map((f) => f.filename);
 
-  /* --- 1. Findings introduced by this PR -------------------------------- */
+
   const bySeverity = new Map<Severity, number>();
   for (const finding of newFindings) {
     bySeverity.set(finding.severity, (bySeverity.get(finding.severity) ?? 0) + 1);
   }
   let findingPoints = 0;
   for (const [severity, count] of bySeverity) {
-    // sqrt-damped: the 5th medium matters less than the 1st, but a single
-    // critical still dominates the score.
+
+
     const points = NEW_FINDING_POINTS[severity] * Math.sqrt(count);
     findingPoints += points;
   }
@@ -140,7 +140,7 @@ export function assessPullRequestRisk(input: AssessRiskInput): PullRequestRisk {
     });
   }
 
-  /* --- 2. Sensitive areas touched --------------------------------------- */
+
   const matchedAreas = new Map<string, { points: number; files: string[] }>();
   for (const file of allTouched) {
     for (const rule of SENSITIVE_PATTERNS) {
@@ -160,10 +160,10 @@ export function assessPullRequestRisk(input: AssessRiskInput): PullRequestRisk {
     });
   }
 
-  /* --- 3. Diff size ------------------------------------------------------ */
+
   const totalChanges = files.reduce((sum, f) => sum + f.changes, 0);
-  // Large diffs are harder to review; log-scaled so a 5000-line PR is not 50x
-  // a 100-line one, capped at 15.
+
+
   const sizePoints = Math.min(15, Math.max(0, Math.log10(Math.max(totalChanges, 1) / 20) * 10));
   if (sizePoints >= 1) {
     factors.push({
@@ -174,7 +174,7 @@ export function assessPullRequestRisk(input: AssessRiskInput): PullRequestRisk {
     });
   }
 
-  /* --- 4. Blast radius via the import graph ----------------------------- */
+
   const dependents = new Map<string, string[]>();
   for (const [file, imports] of importGraph) {
     for (const target of imports) {
@@ -200,13 +200,13 @@ export function assessPullRequestRisk(input: AssessRiskInput): PullRequestRisk {
     });
   }
 
-  /* --- 5. Test coverage of the change ----------------------------------- */
+
   const testSet = new Set(testFiles);
   const coveringTests = new Set<string>();
   const uncoveredChanges: string[] = [];
 
   for (const changed of changedFiles) {
-    if (testSet.has(changed)) continue; // the change IS a test
+    if (testSet.has(changed)) continue;
     const covering = findCoveringTests(changed, testFiles, importGraph);
     if (covering.length === 0) {
       if (isSourceFile(changed)) uncoveredChanges.push(changed);
@@ -227,7 +227,7 @@ export function assessPullRequestRisk(input: AssessRiskInput): PullRequestRisk {
     });
   }
 
-  /* --- 6. Truncated diff -------------------------------------------------- */
+
   if (truncatedDiff) {
     factors.push({
       id: 'truncated-diff',
@@ -237,7 +237,7 @@ export function assessPullRequestRisk(input: AssessRiskInput): PullRequestRisk {
     });
   }
 
-  /* --- 7. Credit for fixes ------------------------------------------------ */
+
   if (resolvedFingerprints.length > 0) {
     const credit = -Math.min(10, resolvedFingerprints.length * 2);
     factors.push({
@@ -252,23 +252,23 @@ export function assessPullRequestRisk(input: AssessRiskInput): PullRequestRisk {
   const score = Math.max(0, Math.min(100, round(raw)));
   const bandLevel = SEVERITY_FLOOR.find((band) => score >= band.min)?.level ?? 'info';
 
-  // A PR that introduces a finding at/above the policy threshold blocks the
-  // merge regardless of the aggregate score: one critical secret in a tiny diff
-  // must not be averaged away by an otherwise-clean change.
+
+
+
   const worstNew = newFindings.reduce<Severity | null>(
     (worst, f) => (worst === null || meetsThreshold(f.severity, worst) ? f.severity : worst),
     null,
   );
   const shouldBlock = worstNew !== null && meetsThreshold(worstNew, failOnSeverity);
 
-  /*
-   * The level is floored by the worst finding this PR introduces.
-   *
-   * Without this, a two-line diff that adds a hardcoded credential scores in
-   * the "low" band on points alone and gets labelled low risk while the check
-   * blocks the merge — a contradiction that destroys trust in the label. The
-   * numeric score stays untouched; only the human-readable level is corrected.
-   */
+
+
+
+
+
+
+
+
   const level: Severity =
     worstNew !== null && meetsThreshold(worstNew, bandLevel) ? worstNew : bandLevel;
 
@@ -291,7 +291,7 @@ export function assessPullRequestRisk(input: AssessRiskInput): PullRequestRisk {
   };
 }
 
-/** A test covers a file if it imports it, or matches it by name convention. */
+
 function findCoveringTests(
   filePath: string,
   testFiles: string[],
@@ -316,7 +316,7 @@ function isSourceFile(path: string): boolean {
   return /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rb|java|php)$/i.test(path) && !/\.(test|spec)\./i.test(path);
 }
 
-/** Concrete, path-specific test suggestions — never generic advice. */
+
 function recommendTests(uncovered: string[], newFindings: Finding[], impacted: string[]): string[] {
   const out: string[] = [];
 

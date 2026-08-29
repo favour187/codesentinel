@@ -1,6 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton';
 
-/** Route-level loading state for every authenticated page. */
+
 export default function Loading() {
   return (
     <div className="animate-in-fade" aria-busy="true" aria-label="Loading">

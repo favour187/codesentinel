@@ -1,7 +1,7 @@
-/**
- * Client-safe search types and ranking. Kept off the database so the search
- * input can live in a client component without bundling postgres/pglite.
- */
+
+
+
+
 
 export interface SearchDocument {
   readonly kind: 'file' | 'symbol' | 'package' | 'route';
@@ -16,13 +16,13 @@ export interface SearchHit extends SearchDocument {
   readonly score: number;
 }
 
-/**
- * Rank documents against a query.
- *
- * Prefix matches beat substring matches; exact title beats a match buried in
- * the haystack. An empty query returns nothing rather than the whole index —
- * the page already lists architecture; search is for lookup.
- */
+
+
+
+
+
+
+
 export function searchDocuments(documents: readonly SearchDocument[], query: string, limit = 30): SearchHit[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];

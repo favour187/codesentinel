@@ -6,30 +6,30 @@ import { writeFile } from 'node:fs/promises';
 import type { GitHubClient } from '@/github/client';
 import { createLogger } from '@/lib/logger';
 
-/**
- * Materialises a repository at a specific commit so the deterministic scanners
- * can read real files.
- *
- * Tarball over `git clone`: it is one authenticated HTTP request, needs no git
- * binary, transfers a single commit instead of history, and never writes
- * credentials into a `.git/config` on disk. History-dependent features (code
- * archaeology) will need a real clone and are out of scope here.
- *
- * The checkout always lands in an OS temp directory and is ALWAYS removed in a
- * finally block — a scanned repository is untrusted input and must not persist
- * on the host.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const log = createLogger('guardian:checkout');
 
 export interface Checkout {
-  /** Absolute path to the extracted repository root. */
+
   dir: string;
-  /** Removes the checkout. Safe to call twice. */
+
   cleanup: () => Promise<void>;
 }
 
-/** Upper bound on tarball size — refuses to fill the disk with a huge repo. */
+
 const MAX_TARBALL_BYTES = 100 * 1024 * 1024;
 
 export async function checkoutRepository(
@@ -57,8 +57,8 @@ export async function checkoutRepository(
     const tarPath = join(base, 'repo.tar.gz');
     await writeFile(tarPath, Buffer.from(buffer));
 
-    // GitHub tarballs nest everything under "{owner}-{repo}-{sha}/", so strip
-    // that first path component to get a clean repository root.
+
+
     await extractTarball(tarPath, extractDir);
     await rm(tarPath, { force: true });
 

@@ -11,11 +11,11 @@ import {
 import { createTestDb, seedRepository } from '../helpers/test-db';
 import type { TestDb } from '../helpers/test-db';
 
-/**
- * Repository memory is injected into prompts as authoritative context, so the
- * invariant that matters most is that it is human-authored: there is no code
- * path from an AI response into these rows.
- */
+
+
+
+
+
 
 let db: TestDb;
 let repositoryId: string;

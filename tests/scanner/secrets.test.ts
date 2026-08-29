@@ -56,8 +56,8 @@ describe('secrets scanner — never leaks the secret', () => {
   });
 
   it('does not put the raw secret anywhere in the serialised finding', async () => {
-    // The whole finding is persisted and rendered, so a leak in any field —
-    // title, description, metadata — is a leak in the product.
+
+
     const findings = await scanSource(
       secretsScanner,
       'src/config.js',
@@ -119,8 +119,8 @@ describe('secrets scanner — false positives', () => {
   });
 
   it('reports a provider-recognised secret exactly once', async () => {
-    // The generic high-entropy rule must not re-report what a provider rule
-    // already claimed, or every AWS key would appear twice.
+
+
     const findings = await scanSource(
       secretsScanner,
       'src/config.js',

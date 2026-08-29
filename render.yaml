@@ -2,7 +2,7 @@ services:
   - type: web
     name: codesentinel
     runtime: node
-    # 512 MB. Starter (2 GB) is optional if scans grow.
+
     plan: free
     buildCommand: env -u NODE_OPTIONS NEXT_TELEMETRY_DISABLED=1 NPM_CONFIG_PRODUCTION=false npm ci && env -u NODE_OPTIONS NEXT_TELEMETRY_DISABLED=1 npm run build
     startCommand: sh scripts/render-start.sh

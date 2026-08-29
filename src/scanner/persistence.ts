@@ -29,18 +29,18 @@ import {
 import { diffFindings } from './scoring';
 import type { Finding, SourceFile } from './types';
 
-/**
- * Persists a scan and everything derived from it.
- *
- * The scan row is created first with status `running`, so an in-flight or
- * crashed scan is visible in the UI rather than invisible until it completes.
- * Writes are chunked so a large repository never builds one oversized
- * statement.
- */
+
+
+
+
+
+
+
+
 
 const log = createLogger('scanner:persist');
 
-/** Batch size for multi-row inserts. */
+
 const CHUNK = 200;
 
 function chunked<T>(items: readonly T[], size = CHUNK): T[][] {
@@ -66,7 +66,7 @@ export interface ExecutedScan {
   healthDelta: number | null;
 }
 
-/** Fingerprints currently open for a repository — the baseline for diffing. */
+
 export async function openFingerprints(repositoryId: string): Promise<string[]> {
   const db = await getDb();
   const rows = await db
@@ -121,15 +121,15 @@ export async function executeScan(options: ExecuteScanOptions): Promise<Executed
     await persistFindings(scanId, options.repositoryId, result, delta);
     await persistRepositoryIntelligence(scanId, options.repositoryId, result);
 
-    /*
-     * The Digital Twin indexes the same file set the scanners just read, so
-     * indexing costs no extra disk I/O and stays consistent with the findings
-     * from this scan. It is incremental: unchanged files are skipped on the
-     * hash comparison alone.
-     *
-     * A twin failure must never fail the scan — findings are the product,
-     * the graph is an enrichment. We log and carry on.
-     */
+
+
+
+
+
+
+
+
+
     try {
       const indexed = await indexRepository(options.repositoryId, result.files);
       log.info('Digital twin indexed', {
@@ -141,8 +141,8 @@ export async function executeScan(options: ExecuteScanOptions): Promise<Executed
         edges: indexed.edgeCount,
         durationMs: indexed.durationMs,
       });
-      // Components are derived from the graph plus this scan's findings, so
-      // they are rebuilt after both exist.
+
+
       await rebuildComponents(options.repositoryId, scanId);
     } catch (error: unknown) {
       log.error('Digital twin indexing failed; scan results are unaffected', {
@@ -216,9 +216,9 @@ export async function executeScan(options: ExecuteScanOptions): Promise<Executed
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* Findings + health snapshot                                                 */
-/* -------------------------------------------------------------------------- */
+
+
+
 
 interface Delta {
   introduced: Finding[];
@@ -235,20 +235,20 @@ async function persistFindings(
   const db = await getDb();
   const now = new Date();
 
-  /*
-   * Each scan writes a complete, self-contained set of findings, so the rows
-   * from the previous scan have to be retired. The distinction that matters:
-   *
-   *   - genuinely fixed  -> status 'resolved' + resolvedAt (Insights counts it)
-   *   - still reproduces -> status 'superseded', no resolvedAt (it was never
-   *                         fixed; the newest scan simply owns the live row)
-   *
-   * Conflating the two would make every re-scan look like a wave of fixes
-   * immediately undone by a wave of regressions.
-   *
-   * Ordering matters: retire the old rows before inserting the new ones, or the
-   * update would close the rows just written.
-   */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   const previouslyOpen = new Map<string, Date>();
   const existing = await db
     .select({
@@ -342,11 +342,11 @@ async function persistFindings(
   });
 }
 
-/* -------------------------------------------------------------------------- */
-/* Repository intelligence: files, dependencies, tests                        */
-/* -------------------------------------------------------------------------- */
 
-/** Classifies a file's role, used by the Codebase map. */
+
+
+
+
 export function classifyFile(file: SourceFile): string {
   if (file.isTest) return 'test';
   if (file.language === 'dockerfile' || /^(?:docker-compose|\.github\/|k8s\/|terraform\/)/.test(file.path)) return 'infra';
@@ -357,7 +357,7 @@ export function classifyFile(file: SourceFile): string {
   return 'source';
 }
 
-/** Extracts exported symbol names — powers the API/component map. */
+
 export function extractExports(file: SourceFile): string[] {
   const names = new Set<string>();
   const patterns = [
@@ -374,7 +374,7 @@ export function extractExports(file: SourceFile): string[] {
       if (match[1] && !match[1].startsWith('_')) names.add(match[1]);
     }
   }
-  // `module.exports = { a, b }`
+
   const bulk = /module\.exports\s*=\s*\{([^}]*)\}/.exec(file.content);
   if (bulk?.[1]) {
     for (const part of bulk[1].split(',')) {
@@ -385,7 +385,7 @@ export function extractExports(file: SourceFile): string[] {
   return [...names].slice(0, 100);
 }
 
-/** Cheap cyclomatic-complexity proxy: count of branching constructs. */
+
 export function complexityOf(file: SourceFile): number {
   const matches = file.content.match(
     /\b(?:if|else\s+if|for|while|case|catch|elif|and|or|&&|\|\||\?\.|\?)\b|\?\?/g,
@@ -393,10 +393,10 @@ export function complexityOf(file: SourceFile): number {
   return 1 + (matches?.length ?? 0);
 }
 
-/**
- * Risk score per file (0..1): complexity relative to size, weighted by whether
- * the module is untested and how many findings landed on it.
- */
+
+
+
+
 export function fileRisk(file: SourceFile, findingCount: number, isCovered: boolean): number {
   const density = Math.min(1, complexityOf(file) / Math.max(file.loc, 20));
   const findingPressure = Math.min(1, findingCount / 5);
@@ -411,13 +411,13 @@ export async function persistRepositoryIntelligence(
 ): Promise<void> {
   const db = await getDb();
 
-  /*
-   * files/dependencies/tests describe the repository as of one scan, and only
-   * the newest scan's rows are ever queried. Without this the tables grow by a
-   * full repository snapshot on every scan — thousands of dead rows a day on an
-   * active repo. Findings are deliberately NOT pruned here: their history is
-   * the audit trail that drives the Insights trends.
-   */
+
+
+
+
+
+
+
   await db
     .delete(filesTable)
     .where(and(eq(filesTable.repositoryId, repositoryId), ne(filesTable.scanId, scanId)));
@@ -430,7 +430,7 @@ export async function persistRepositoryIntelligence(
 
   const knownPaths = new Set(result.files.map((f) => f.path));
 
-  // Resolve the import graph once; used for both files.imports and test coverage.
+
   const importsByFile = new Map<string, string[]>();
   const covered = new Set<string>();
 
@@ -450,7 +450,7 @@ export async function persistRepositoryIntelligence(
     findingsByFile.set(finding.filePath, (findingsByFile.get(finding.filePath) ?? 0) + 1);
   }
 
-  /* --------------------------------- files --------------------------------- */
+
   for (const chunk of chunked(result.files)) {
     await db.insert(filesTable).values(
       chunk.map((file) => ({
@@ -471,13 +471,13 @@ export async function persistRepositoryIntelligence(
     );
   }
 
-  /* ----------------------------- dependencies ------------------------------ */
+
   const parsed = parseManifests(result.files);
   if (parsed.length > 0) {
     const vulnerabilities = result.vulnerabilities;
 
-    // The unique index is (scanId, ecosystem, name, manifestPath); a manifest
-    // listing a package in both deps and devDeps would otherwise conflict.
+
+
     const seen = new Set<string>();
     const rows = parsed
       .filter((dep) => {
@@ -504,7 +504,7 @@ export async function persistRepositoryIntelligence(
     }
   }
 
-  /* --------------------------------- tests --------------------------------- */
+
   const testRows = result.files
     .filter((file) => file.isTest)
     .map((file) => ({

@@ -1,14 +1,14 @@
-/**
- * Component grouping — turns a file-level graph into an architecture-level one.
- *
- * A repository with 800 files produces an 800-node graph that nobody can read.
- * Grouping files into logical components by directory gives a diagram with tens
- * of nodes instead of hundreds, which is the only version worth rendering.
- *
- * Everything here is deterministic and derived from rows the indexer and the
- * scanners already wrote. No AI, no guesses: a component's dependency count is
- * the number of distinct components its files genuinely import.
- */
+
+
+
+
+
+
+
+
+
+
+
 import { and, desc, eq, inArray } from 'drizzle-orm';
 
 import { getDb } from '@/db';
@@ -24,7 +24,7 @@ import { createLogger } from '@/lib/logger';
 
 const log = createLogger('twin:components');
 
-/** Architectural layer, in the order they should be drawn top-to-bottom. */
+
 export const LAYERS = ['Frontend', 'API', 'Services', 'Data', 'Infrastructure', 'Tests', 'Config', 'Other'] as const;
 export type Layer = (typeof LAYERS)[number];
 
@@ -58,10 +58,10 @@ export interface ComponentSummary {
   readonly riskFactors: RiskFactor[];
 }
 
-/**
- * Directory-prefix rules, first match wins. Ordered most-specific first so
- * `src/api/routes` lands in API rather than Services.
- */
+
+
+
+
 const LAYER_RULES: ReadonlyArray<{ layer: Layer; test: (path: string) => boolean }> = [
   {
     layer: 'Tests',
@@ -93,7 +93,7 @@ const LAYER_RULES: ReadonlyArray<{ layer: Layer; test: (path: string) => boolean
   },
 ];
 
-/** Paths whose compromise has outsized consequences. */
+
 const SECURITY_SENSITIVE = /(^|\/)(auth|authentication|authorization|login|session|password|crypto|payment|billing|checkout|token|secret|permission|admin)/i;
 
 export function layerOf(path: string): Layer {
@@ -103,26 +103,26 @@ export function layerOf(path: string): Layer {
   return 'Other';
 }
 
-/**
- * The directory a file's component is keyed on.
- *
- * Two levels below the source root keeps related files together
- * (`src/services/auth/*` → one component) without collapsing a whole
- * repository into `src`. Root-level files group under `(root)`.
- */
+
+
+
+
+
+
+
 export function componentRootOf(path: string): string {
   const parts = path.split('/').filter(Boolean);
   if (parts.length <= 1) return '(root)';
 
-  // Drop a leading source-root directory so `src/routes` reads as `routes`.
+
   const isSourceRoot = /^(src|lib|app|packages|source)$/i.test(parts[0] ?? '');
   const stripped = isSourceRoot && parts.length > 2 ? parts.slice(1) : parts;
   const dirs = stripped.slice(0, -1);
   if (dirs.length === 0) return '(root)';
-  /*
-   * `src/index.ts` groups with the root, not into a component called "Src".
-   * A bare source root is a location, not a logical component.
-   */
+
+
+
+
   if (dirs.length === 1 && isSourceRoot && dirs[0] === parts[0]) return '(root)';
   return dirs.slice(0, 2).join('/');
 }
@@ -140,13 +140,13 @@ function humanName(root: string): string {
     .join(' / ');
 }
 
-/**
- * Component risk — 0-100, documented in docs/digital-twin.md.
- *
- * Every factor is measured, never inferred. The bands are deliberately
- * conservative: a component only reaches `critical` if it combines unresolved
- * critical findings with real exposure.
- */
+
+
+
+
+
+
+
 export function scoreComponentRisk(input: {
   criticalCount: number;
   highCount: number;
@@ -160,7 +160,7 @@ export function scoreComponentRisk(input: {
 }): { score: number; level: RiskLevel; factors: RiskFactor[] } {
   const factors: RiskFactor[] = [];
 
-  // Findings, weighted by severity. Capped so one noisy area cannot dominate.
+
   const findingPoints = Math.min(
     35,
     input.criticalCount * 10 + input.highCount * 5 + input.mediumCount * 2 + input.lowCount * 0.5,
@@ -173,7 +173,7 @@ export function scoreComponentRisk(input: {
     });
   }
 
-  // Blast radius: how much of the system leans on this component.
+
   const dependentPoints = Math.min(20, Math.log2(input.dependentCount + 1) * 7);
   if (dependentPoints > 0) {
     factors.push({
@@ -183,7 +183,7 @@ export function scoreComponentRisk(input: {
     });
   }
 
-  // Test gap, as a proportion of the component.
+
   const untestedRatio = input.fileCount === 0 ? 0 : input.untestedFiles / input.fileCount;
   const testPoints = Math.min(20, untestedRatio * 20);
   if (testPoints > 0) {
@@ -194,7 +194,7 @@ export function scoreComponentRisk(input: {
     });
   }
 
-  // Churn: recently and frequently changed code fails more often.
+
   const churnPoints = Math.min(12, Math.log10(input.changeFrequency + 1) * 8);
   if (churnPoints > 0) {
     factors.push({
@@ -204,7 +204,7 @@ export function scoreComponentRisk(input: {
     });
   }
 
-  // Security sensitivity is a multiplier on consequence, not a finding.
+
   const sensitivePoints = input.securitySensitive ? 13 : 0;
   if (sensitivePoints > 0) {
     factors.push({
@@ -229,20 +229,20 @@ function round1(n: number): number {
   return Math.round(n * 10) / 10;
 }
 
-/**
- * Rebuild the component table for a repository from current twin + scan rows.
- *
- * Cheap enough to run after every index: it is a handful of aggregate queries
- * over rows already in the database, with no parsing and no file I/O.
- */
+
+
+
+
+
+
 export async function rebuildComponents(
   repositoryId: string,
-  /*
-   * The scan whose file rows describe the repository. Passed explicitly by the
-   * scan pipeline, which calls this while its own scan is still `running` —
-   * looking up the latest *completed* scan there would find the previous one,
-   * whose file rows persistRepositoryIntelligence has already pruned.
-   */
+
+
+
+
+
+
   scanId?: string,
 ): Promise<ComponentSummary[]> {
   const startedAt = Date.now();
@@ -286,7 +286,7 @@ export async function rebuildComponents(
     .from(commitsTable)
     .where(eq(commitsTable.repositoryId, repositoryId));
 
-  /* ---- group files ---- */
+
   const byKey = new Map<string, { root: string; layer: Layer; paths: string[]; loc: number }>();
   const keyForPath = new Map<string, string>();
 
@@ -297,8 +297,8 @@ export async function rebuildComponents(
     if (existing) {
       existing.paths.push(row.path);
       existing.loc += row.loc ?? 0;
-      // A component's layer is the one most of its files agree on; keeping the
-      // first non-Other wins is close enough and stable.
+
+
       if (existing.layer === 'Other') existing.layer = layerOf(row.path);
     } else {
       byKey.set(key, {
@@ -310,7 +310,7 @@ export async function rebuildComponents(
     }
   }
 
-  /* ---- component-to-component dependencies from real IMPORTS edges ---- */
+
   const dependsOn = new Map<string, Set<string>>();
   const dependedBy = new Map<string, Set<string>>();
 
@@ -325,13 +325,13 @@ export async function rebuildComponents(
     dependedBy.get(to)?.add(from);
   }
 
-  /* ---- which files a test actually reaches (direct TESTS edges) ---- */
+
   const testedPaths = new Set<string>();
   for (const edge of edges) {
     if (edge.type === 'tests') testedPaths.add(edge.toKey);
   }
 
-  /* ---- findings per component ---- */
+
   const severityByKey = new Map<string, { critical: number; high: number; medium: number; low: number; total: number }>();
   for (const finding of openFindings) {
     if (!finding.filePath) continue;
@@ -346,7 +346,7 @@ export async function rebuildComponents(
     severityByKey.set(key, bucket);
   }
 
-  /* ---- churn per component from commit changedPaths ---- */
+
   const churnByKey = new Map<string, number>();
   for (const commit of commitRows) {
     for (const path of commit.changedPaths ?? []) {
@@ -356,18 +356,18 @@ export async function rebuildComponents(
     }
   }
 
-  /* ---- assemble ---- */
+
   const summaries: ComponentSummary[] = [];
   for (const [key, group] of byKey) {
     const sev = severityByKey.get(key) ?? { critical: 0, high: 0, medium: 0, low: 0, total: 0 };
     const isTestComponent = group.layer === 'Tests';
     const untestedFiles = isTestComponent ? 0 : group.paths.filter((p) => !testedPaths.has(p)).length;
     const testCount = group.paths.filter((p) => testedPaths.has(p)).length;
-    /*
-     * A test file that exercises auth is not itself a security-sensitive
-     * surface — marking it so inflates the risk of the Tests component and
-     * pushes real hotspots down the heatmap.
-     */
+
+
+
+
+
     const securitySensitive = !isTestComponent && group.paths.some((p) => SECURITY_SENSITIVE.test(p));
     const dependentCount = dependedBy.get(key)?.size ?? 0;
     const changeFrequency = churnByKey.get(key) ?? 0;
@@ -408,7 +408,7 @@ export async function rebuildComponents(
 
   summaries.sort((a, b) => b.riskScore - a.riskScore || a.key.localeCompare(b.key));
 
-  /* ---- persist: full replace, the set is small and always derived ---- */
+
   await db.delete(components).where(eq(components.repositoryId, repositoryId));
   if (summaries.length > 0) {
     await db.insert(components).values(
@@ -446,7 +446,7 @@ export async function rebuildComponents(
   return summaries;
 }
 
-/** Component-level dependency edges, for the architecture graph. */
+
 export async function componentGraph(repositoryId: string): Promise<{
   nodes: ComponentSummary[];
   edges: Array<{ from: string; to: string; fileCount: number }>;

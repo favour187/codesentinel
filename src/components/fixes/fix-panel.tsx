@@ -18,13 +18,13 @@ import { AIDisclosure, ClaimList, ConfidenceBadge } from '@/components/ai/ai-dis
 import { cn } from '@/lib/utils';
 import type { Severity } from '@/db/schema';
 
-/**
- * Item 16: the fix review panel.
- *
- * The order on screen is the order a reviewer needs: what is wrong, why it
- * matters, the current code, the proposed change, the diff, the tests, the
- * risks. Every action is explicit — nothing generates or applies on mount.
- */
+
+
+
+
+
+
+
 
 export interface FindingSummary {
   id: string;
@@ -183,7 +183,7 @@ export function FixPanel({ finding }: { finding: FindingSummary }) {
 
   return (
     <div className="space-y-8">
-      {/* 1. What is wrong — always from the deterministic scanner. */}
+      {}
       <section className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant={SEVERITY_VARIANT[finding.severity]}>{finding.severity}</Badge>
@@ -211,14 +211,14 @@ export function FixPanel({ finding }: { finding: FindingSummary }) {
         ) : null}
       </section>
 
-      {/* 2. Current code. */}
+      {}
       {finding.evidence ? (
         <Section title="Current code" subtitle="Captured by the scanner at the reported location.">
           <CodeBlock code={finding.evidence} startLine={finding.lineStart ?? 1} highlightLine={finding.lineStart} />
         </Section>
       ) : null}
 
-      {/* 3. AI explanation — opt-in. */}
+      {}
       <Section
         title="AI explanation"
         subtitle="An explanation of this finding in the context of your actual code."
@@ -263,7 +263,7 @@ export function FixPanel({ finding }: { finding: FindingSummary }) {
         ) : null}
       </Section>
 
-      {/* 4. The proposed fix. */}
+      {}
       <Section
         title="Proposed fix"
         subtitle="Generated against the current contents of the file, then verified to apply cleanly."
@@ -362,12 +362,12 @@ export function FixPanel({ finding }: { finding: FindingSummary }) {
 
             <AIDisclosure confidence={fix.confidence} provider={fix.provider} model={fix.model} />
 
-            {/*
-              Applying is deliberately not available yet rather than faked.
-              Branch and pull-request creation needs write scopes the MVP does
-              not request; a disabled control that explains itself is honest,
-              a button that silently does nothing is not.
-            */}
+            {
+
+
+
+
+}
             <div className="flex flex-wrap items-center gap-2 border-t border-[hsl(var(--border))] pt-4">
               <Button variant="outline" size="sm" onClick={() => void runTests()} disabled={testsPhase === 'loading'}>
                 {testsPhase === 'loading' ? (
@@ -392,7 +392,7 @@ export function FixPanel({ finding }: { finding: FindingSummary }) {
         ) : null}
       </Section>
 
-      {/* 5. Generated tests. */}
+      {}
       {testsError || tests || testsPhase === 'loading' ? (
         <Section title="Regression tests" subtitle="Generated for review. CodeSentinel has not run them.">
           {testsError ? <InlineError message={testsError} /> : null}

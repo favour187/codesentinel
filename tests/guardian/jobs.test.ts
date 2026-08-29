@@ -15,10 +15,10 @@ import {
   LOCK_TIMEOUT_MS,
 } from '@/guardian/jobs';
 
-/**
- * Queue tests run against real PGlite, because the correctness of the claim
- * path depends on actual SQL semantics (conditional UPDATE ... RETURNING).
- */
+
+
+
+
 
 declare global {
   var __codesentinel_db: unknown;
@@ -55,7 +55,7 @@ describe('enqueueScan', () => {
   });
 
   it('deduplicates a repeated enqueue for the same commit', async () => {
-    // Three pushes to the same head in quick succession must not queue three scans.
+
     const first = await enqueueScan({ repositoryId, trigger: 'push', commitSha: 'dup' });
     const second = await enqueueScan({ repositoryId, trigger: 'push', commitSha: 'dup' });
     expect(second.id).toBe(first.id);
@@ -89,8 +89,8 @@ describe('claimNextJob', () => {
   });
 
   it('never hands the same job to two workers', async () => {
-    // The core concurrency guarantee: a double-claim means a double scan and a
-    // duplicate PR comment.
+
+
     await enqueueScan({ repositoryId, trigger: 'push', commitSha: 'only-one' });
     const [a, b] = await Promise.all([claimNextJob('worker-a'), claimNextJob('worker-b')]);
     const claimed = [a, b].filter(Boolean);
@@ -113,7 +113,7 @@ describe('claimNextJob', () => {
   });
 
   it('reclaims a job whose worker died mid-scan', async () => {
-    // Without lock expiry, a crashed worker strands the job forever.
+
     const job = await enqueueScan({ repositoryId, trigger: 'push', commitSha: 'stale' });
     await claimNextJob('dead-worker');
 

@@ -6,12 +6,12 @@ import * as schema from '@/db/schema';
 import { createTestDb, seedRepository, seedScan } from '../helpers/test-db';
 import type { TestDb } from '../helpers/test-db';
 
-/**
- * Blast Radius 2.0 reads `code_edges`, not `files.imports`. These tests seed
- * the twin directly so they pin the engine's behaviour rather than the
- * indexer's — and in particular that it never reports a relationship the
- * graph does not contain.
- */
+
+
+
+
+
+
 
 let db: TestDb;
 let repositoryId: string;
@@ -66,11 +66,11 @@ async function seedSymbol(filePath: string, name: string, extra: Partial<typeof 
   });
 }
 
-/**
- *   src/lib/db.ts <- src/services/user.ts <- src/routes/users.ts (exposes GET /users)
- *                 <- src/services/order.ts
- *   tests/user.test.ts tests src/services/user.ts
- */
+
+
+
+
+
 async function seedGraph() {
   await seedScan(db, repositoryId, {
     files: [
@@ -291,7 +291,7 @@ describe('previewChangeImpact', () => {
     const preview = await previewChangeImpact(repositoryId, ['src/lib/db.ts', 'src/services/user.ts']);
 
     expect(preview.resolved).toBe(true);
-    // routes/users.ts is 2 hops from db.ts but 1 from user.ts — nearest wins.
+
     const route = preview.affectedFiles.find((f) => f.path === 'src/routes/users.ts');
     expect(route?.depth).toBe(1);
   });

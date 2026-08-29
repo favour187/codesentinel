@@ -21,21 +21,21 @@ import { getRepositoryPolicy } from '@/lib/repositories';
 import { getEnv } from '@/lib/env';
 import { createLogger } from '@/lib/logger';
 
-/**
- * The guardian pipeline: turn a GitHub event into analysis and feedback.
- *
- * Two flows share one spine (checkout → deterministic scan → persist):
- *  - **Branch scan** (push/manual/schedule): scan the ref, store findings,
- *    update health. This is the repository's running state.
- *  - **Pull request scan**: scan the head, scan the base, diff the two by
- *    fingerprint, then report. The base scan is what makes "new findings"
- *    trustworthy — without it a PR gets blamed for every pre-existing issue in
- *    the repository, which is the fastest way to get a bot ignored.
- *
- * A PR scan deliberately does NOT overwrite the repository's stored findings:
- * a proposed branch must not change the main branch's health score. Only the
- * branch scan of the default branch does that.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const log = createLogger('guardian:pipeline');
 
@@ -48,9 +48,9 @@ export interface RepositoryRef {
   defaultBranch: string;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Branch / push scanning                                                     */
-/* -------------------------------------------------------------------------- */
+
+
+
 
 export interface BranchScanOptions {
   repository: RepositoryRef;
@@ -104,9 +104,9 @@ export async function scanBranch(options: BranchScanOptions): Promise<BranchScan
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* Pull request scanning                                                      */
-/* -------------------------------------------------------------------------- */
+
+
+
 
 export interface PullRequestScanOptions {
   repository: RepositoryRef;
@@ -118,7 +118,7 @@ export interface PullRequestScanOptions {
   title?: string | null;
   authorLogin?: string | null;
   client: GitHubClient;
-  /** Skip posting to GitHub — used by tests and dry runs. */
+
   dryRun?: boolean;
 }
 
@@ -136,11 +136,11 @@ export async function scanPullRequest(options: PullRequestScanOptions): Promise<
   const db = await getDb();
   const policy = await getRepositoryPolicy(repository.id);
 
-  /* 1. What changed. */
+
   const { files, truncated } = await client.listPullRequestFiles(repository.owner, repository.name, number);
 
-  /* 2. Scan the head. Persisted with pullRequestId so it is attributable, but
-   *    findings are scoped to this scan row and never retire branch findings. */
+
+
   const headCheckout = await checkoutRepository(client, repository.owner, repository.name, headSha);
 
   let headResult: ScanResult;
@@ -189,8 +189,8 @@ export async function scanPullRequest(options: PullRequestScanOptions): Promise<
     await headCheckout.cleanup();
   }
 
-  /* 3. Baseline: scan the merge base so pre-existing issues are not blamed on
-   *    this PR. Reused from a previous scan of the same commit when possible. */
+
+
   const baseFindings = await resolveBaseFindings(repository, baseSha, client);
 
   const basePrints = new Set(baseFindings.map((f) => f.fingerprint));
@@ -198,7 +198,7 @@ export async function scanPullRequest(options: PullRequestScanOptions): Promise<
   const newFindings = headResult.findings.filter((f) => !basePrints.has(f.fingerprint));
   const resolvedFingerprints = [...basePrints].filter((p) => !headPrints.has(p));
 
-  /* 4. Deterministic risk assessment. */
+
   const importGraph = new Map<string, string[]>();
   const testFiles: string[] = [];
   for (const file of headResult.files) {
@@ -218,7 +218,7 @@ export async function scanPullRequest(options: PullRequestScanOptions): Promise<
     truncatedDiff: truncated,
   });
 
-  /* 5. Persist the scan + findings + risk. */
+
   await persistPullRequestFindings(scanId, repository.id, headResult, basePrints);
 
   await db
@@ -243,7 +243,7 @@ export async function scanPullRequest(options: PullRequestScanOptions): Promise<
     })
     .where(eq(pullRequests.id, pullRequestId));
 
-  /* 6. Report back to GitHub. */
+
   const ctx: ReportContext = {
     repositoryFullName: repository.fullName,
     pullRequestNumber: number,
@@ -263,12 +263,12 @@ export async function scanPullRequest(options: PullRequestScanOptions): Promise<
     checkRunId = await postCheckRun(client, repository, scanId, check);
   }
   if (!options.dryRun && policy.postPrComments) {
-    /*
-     * The AI review is appended to the deterministic comment, never
-     * substituted for it. The check conclusion above is already decided and
-     * is not revisited: an AI opinion must not be able to change whether a
-     * pull request is blocked.
-     */
+
+
+
+
+
+
     const aiSection = await buildAIReviewSection({
       repositoryId: repository.id,
       repositoryFullName: repository.fullName,
@@ -322,27 +322,27 @@ export async function scanPullRequest(options: PullRequestScanOptions): Promise<
   };
 }
 
-/* -------------------------------------------------------------------------- */
-/* Helpers                                                                    */
-/* -------------------------------------------------------------------------- */
 
-/**
- * Store the findings observed on a pull request head.
- *
- * These rows are written with status `proposed`, never `open`, and they never
- * retire the tracked branch's rows. That single distinction is what lets a PR
- * scan be fully persisted without letting an unmerged branch move the
- * repository's health score or leak into the repository finding list.
- *
- * Persisting them at all matters for three reasons: the Guardian dashboard
- * reports a real per-PR finding count, a maintainer can open a PR finding and
- * act on it, and anything that needs a durable finding id (the fix engine,
- * explanations, triage) has one.
- *
- * `firstSeenOnBase` marks findings the PR inherited rather than introduced, so
- * the UI can separate "this PR did this" from "this was already broken"
- * without recomputing the diff.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 async function persistPullRequestFindings(
   scanId: string,
   repositoryId: string,
@@ -391,13 +391,13 @@ async function persistPullRequestFindings(
   });
 }
 
-/**
- * Findings for the base commit.
- *
- * Scanning the base on every PR event would double the work, so a completed
- * scan of the same commit is reused when one exists. Fingerprints are stable
- * across scans by design, which is what makes the cache sound.
- */
+
+
+
+
+
+
+
 async function resolveBaseFindings(
   repository: RepositoryRef,
   baseSha: string,
@@ -471,7 +471,7 @@ async function upsertPullRequest(
   return { id: row.id };
 }
 
-/** Create or update the Check Run, reusing the id from a previous scan of this PR. */
+
 async function postCheckRun(
   client: GitHubClient,
   repository: RepositoryRef,
@@ -483,8 +483,8 @@ async function postCheckRun(
     log.info('Posted check run', { repository: repository.fullName, checkRunId: created.id, scanId });
     return String(created.id);
   } catch (err) {
-    // A failed check post must not fail the scan — the findings are already
-    // stored and visible in the dashboard.
+
+
     log.error('Failed to post check run', {
       repository: repository.fullName,
       error: (err as Error).message,
@@ -493,20 +493,20 @@ async function postCheckRun(
   }
 }
 
-/**
- * Post or update the guardian's sticky comment.
- *
- * Editing one comment rather than appending a new one per push is the
- * difference between a useful bot and a muted one.
- */
-/**
- * Produce the AI review section of the pull request comment.
- *
- * Returns null — never throws, never rejects — when AI is unconfigured, slow,
- * broken or returns something invalid. The deterministic comment is the
- * product; this is an enhancement to it, and the guardian must behave
- * identically whether or not an inference provider happens to be reachable.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 async function buildAIReviewSection(input: PullRequestReviewInput): Promise<string | null> {
   try {
     const result = await reviewPullRequest(input);
@@ -546,7 +546,7 @@ async function postComment(
         await client.updateIssueComment(repository.owner, repository.name, existingId, body);
         return existingId;
       }
-      // Comment was deleted by a human — fall through and post a fresh one.
+
     }
 
     const created = await client.createIssueComment(repository.owner, repository.name, number, body);
@@ -565,14 +565,14 @@ async function postComment(
   }
 }
 
-/**
- * Store the commit behind a scan.
- *
- * This is what lets Insights answer "what changed when the score moved" and
- * gives code archaeology a spine to walk. It is deliberately best-effort:
- * commit metadata is context, not the analysis, so a GitHub hiccup here must
- * never fail a scan that already produced findings.
- */
+
+
+
+
+
+
+
+
 async function recordCommit(
   repository: RepositoryRef,
   commitSha: string,
@@ -588,8 +588,8 @@ async function recordCommit(
       .values({
         repositoryId: repository.id,
         sha: commit.sha,
-        // Only the subject line: full bodies are unbounded and can carry
-        // pasted secrets or stack traces we have no reason to retain.
+
+
         message: commit.commit.message.split('\n')[0]?.slice(0, 500) ?? null,
         authorName: commit.commit.author?.name ?? null,
         authorEmail: commit.commit.author?.email ?? null,
@@ -597,8 +597,8 @@ async function recordCommit(
         additions: commit.stats?.additions ?? 0,
         deletions: commit.stats?.deletions ?? 0,
         changedFiles: commit.files?.length ?? 0,
-        // Capped: a lockfile or formatting sweep can touch thousands of files,
-        // and archaeology only needs enough to attribute history to a file.
+
+
         changedPaths: (commit.files ?? []).slice(0, 100).map((f) => f.filename),
       })
       .onConflictDoNothing({ target: [commits.repositoryId, commits.sha] });
@@ -611,13 +611,13 @@ async function recordCommit(
   }
 }
 
-/**
- * Resolve relative import specifiers to repository paths.
- *
- * Only internal (relative) imports matter for blast radius; package imports
- * are handled by the dependency scanner. Extension-less specifiers are matched
- * against the known file list, which is how JS/TS resolution actually behaves.
- */
+
+
+
+
+
+
+
 export function resolveImports(fromPath: string, content: string, allPaths: readonly string[]): string[] {
   const specifiers = new Set<string>();
   const patterns = [

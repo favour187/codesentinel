@@ -38,7 +38,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return redirectTo(request, '/login?error=missing_code');
   }
 
-  // --- CSRF check -----------------------------------------------------------
+
   const expectedState = request.cookies.get(OAUTH_STATE_COOKIE)?.value;
   if (!verifyState(state, expectedState)) {
     log.warn('OAuth state mismatch — possible CSRF attempt');
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const ghUser = await fetchGitHubUser(token.accessToken);
 
     const database = await db();
-    // Token is encrypted at rest (AES-256-GCM) — never stored in plaintext.
+
     const encrypted = encryptSecret(token.accessToken);
 
     const [existing] = await database.select().from(users).where(eq(users.githubId, ghUser.id)).limit(1);

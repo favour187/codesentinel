@@ -9,23 +9,23 @@ import {
 } from '@/lib/repositories';
 import { createLogger } from '@/lib/logger';
 
-/**
- * Webhook event routing.
- *
- * Design rules:
- *  - **Idempotent.** GitHub retries deliveries; the delivery id is recorded
- *    with a unique index and a duplicate short-circuits. Without this, a retry
- *    storm would queue duplicate scans and post duplicate comments.
- *  - **Fast.** Handlers only write rows and enqueue jobs. GitHub times out
- *    around 10 seconds; scanning happens in the worker, never inline.
- *  - **Explicit about ignoring.** Every event we deliberately skip is recorded
- *    with a reason, so "why didn't the guardian run?" is answerable from the
- *    delivery log instead of guesswork.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const log = createLogger('guardian:webhook');
 
-/** Events we act on. Anything else is recorded and ignored. */
+
 export const HANDLED_EVENTS = [
   'ping',
   'push',
@@ -35,7 +35,7 @@ export const HANDLED_EVENTS = [
   'check_run',
 ] as const;
 
-/** Pull request actions worth scanning; ignore label/assignee noise. */
+
 const SCANNABLE_PR_ACTIONS = new Set(['opened', 'reopened', 'synchronize', 'ready_for_review']);
 
 export interface WebhookEnvelope {
@@ -50,12 +50,12 @@ export interface WebhookOutcome {
   jobId?: string;
 }
 
-/**
- * Record the delivery and route it.
- *
- * The ledger insert happens FIRST and doubles as the idempotency lock: if the
- * unique index rejects the insert, this delivery was already handled.
- */
+
+
+
+
+
+
 export async function handleWebhook(envelope: WebhookEnvelope): Promise<WebhookOutcome> {
   const started = Date.now();
   const db = await getDb();
@@ -118,7 +118,7 @@ export async function handleWebhook(envelope: WebhookEnvelope): Promise<WebhookO
         return finish(await handlePullRequest(payload, action, deliveryId));
 
       case 'check_run':
-        // Only react to a user clicking "Re-run" in the GitHub Checks UI.
+
         if (action === 'rerequested') return finish(await handleRerun(payload, deliveryId));
         return finish({ status: 'ignored', message: `check_run action "${action}" not actionable` });
 
@@ -132,9 +132,9 @@ export async function handleWebhook(envelope: WebhookEnvelope): Promise<WebhookO
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* Event handlers                                                             */
-/* -------------------------------------------------------------------------- */
+
+
+
 
 async function handleInstallation(
   payload: Record<string, unknown>,
@@ -153,8 +153,8 @@ async function handleInstallation(
   if (!installation?.id) return { status: 'ignored', message: 'No installation in payload' };
 
   if (action === 'deleted') {
-    // Keep the row but mark it suspended: deleting it would cascade away the
-    // user's whole scan history for repositories they may reconnect later.
+
+
     await db
       .update(installations)
       .set({ suspendedAt: new Date(), updatedAt: new Date() })
@@ -203,7 +203,7 @@ async function handlePush(payload: Record<string, unknown>, deliveryId: string):
 
   if (!ref || !after) return { status: 'ignored', message: 'Push payload missing ref or commit' };
   if (deleted) return { status: 'ignored', message: 'Branch deletion — nothing to scan' };
-  // All-zero sha means the ref was deleted or is a tag creation with no commit.
+
   if (/^0+$/.test(after)) return { status: 'ignored', message: 'No head commit on push' };
 
   const repo = await resolveRepository(payload);
@@ -213,9 +213,9 @@ async function handlePush(payload: Record<string, unknown>, deliveryId: string):
   if (!repo.guardianEnabled) return { status: 'ignored', message: 'Guardian is disabled for this repository' };
   if (!policy.scanOnPush) return { status: 'ignored', message: 'scanOnPush is disabled by policy' };
 
-  // Only the default branch drives repository health. Feature branches are
-  // covered by their pull request, and scanning every branch push would triple
-  // the work for no extra signal.
+
+
+
   const branch = ref.replace(/^refs\/heads\//, '');
   if (ref.startsWith('refs/heads/') && branch !== repo.defaultBranch) {
     return { status: 'ignored', message: `Push to non-default branch "${branch}" — covered by its pull request` };
@@ -250,8 +250,8 @@ async function handlePullRequest(
 
   if (!pr?.number || !pr.head?.sha) return { status: 'ignored', message: 'Pull request payload incomplete' };
 
-  // Draft PRs are work in progress; scanning each push wastes budget and the
-  // author gets the report when they mark it ready (ready_for_review re-fires).
+
+
   if (pr.draft && action !== 'ready_for_review') {
     return { status: 'ignored', message: 'Draft pull request — will scan when marked ready for review' };
   }
@@ -303,9 +303,9 @@ async function handleRerun(payload: Record<string, unknown>, deliveryId: string)
   return { status: 'processed', message: 'Queued re-requested scan', jobId: job.id };
 }
 
-/* -------------------------------------------------------------------------- */
-/* Helpers                                                                    */
-/* -------------------------------------------------------------------------- */
+
+
+
 
 interface ResolvedRepo {
   id: string;
@@ -314,12 +314,12 @@ interface ResolvedRepo {
   guardianEnabled: boolean;
 }
 
-/**
- * Map a webhook payload to a connected repository.
- *
- * Matches on `source = 'github'` so a demo fixture sharing a name can never be
- * driven by a real webhook — demo and real data stay strictly separate.
- */
+
+
+
+
+
+
 async function resolveRepository(payload: Record<string, unknown>): Promise<ResolvedRepo | null> {
   const repository = payload.repository as { full_name?: string; default_branch?: string } | undefined;
   const fullName = repository?.full_name;

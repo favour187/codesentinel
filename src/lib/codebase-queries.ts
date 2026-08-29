@@ -10,16 +10,16 @@ import type { SearchDocument } from '@/lib/codebase-search';
 export type { SearchDocument, SearchHit } from '@/lib/codebase-search';
 export { searchDocuments } from '@/lib/codebase-search';
 
-/** Fixture / test trees are scanned for findings, but they are not this app's API or schema. */
+
 function isSupportPath(filePath: string): boolean {
   return /(?:^|\/)(fixtures|tests|node_modules|\.next|dist|coverage)(?:\/|$)/.test(filePath);
 }
 
-/**
- * Read models for the Codebase page: architecture, package inventory, API map,
- * and in-repo search. Every number comes from the latest completed scan or the
- * digital twin. Nothing is invented for the UI.
- */
+
+
+
+
+
 
 export interface PackageDependency {
   readonly name: string;

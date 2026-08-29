@@ -1,10 +1,10 @@
-/**
- * Route-level tests for POST /api/webhooks/github.
- *
- * These focus on the security boundary — signature verification and status
- * codes — with the handler stubbed, because event routing is covered in
- * tests/guardian/webhook-handler.test.ts.
- */
+
+
+
+
+
+
+
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { resetEnvCache } from '@/lib/env';
@@ -71,7 +71,7 @@ describe('POST /api/webhooks/github — signature enforcement', () => {
   });
 
   it('rejects a signature computed over different bytes', async () => {
-    // Tampering with the body after signing must invalidate the delivery.
+
     const res = await POST(
       request(JSON.stringify({ ref: 'refs/heads/main', after: 'TAMPERED' }), {
         signature: signWebhookBody(BODY, SECRET),
@@ -86,8 +86,8 @@ describe('POST /api/webhooks/github — signature enforcement', () => {
   });
 
   it('returns 503 — not 401 — when the deployment has no secret configured', async () => {
-    // GitHub retries a 503 but gives up on repeated 401s. A missing secret is
-    // our misconfiguration, and deliveries should survive until it is fixed.
+
+
     vi.resetModules();
     delete process.env.GITHUB_WEBHOOK_SECRET;
     resetEnvCache();
@@ -134,7 +134,7 @@ describe('POST /api/webhooks/github — response codes', () => {
   });
 
   it('returns 200 when the handler records a failure', async () => {
-    // The failure is durable in the ledger; a retry would just be deduplicated.
+
     handleWebhook.mockResolvedValue({ status: 'failed', message: 'scanner unavailable' });
     expect((await POST(request(BODY))).status).toBe(200);
   });

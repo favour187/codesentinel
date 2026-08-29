@@ -21,7 +21,7 @@ describe('version parsing and comparison', () => {
   });
 
   it('orders versions numerically, not lexicographically', () => {
-    // The classic bug: "4.17.9" > "4.17.15" under string comparison.
+
     expect(compareVersions('4.17.15', '4.17.9')).toBeGreaterThan(0);
     expect(compareVersions('1.10.0', '1.9.0')).toBeGreaterThan(0);
     expect(compareVersions('2.0.0', '10.0.0')).toBeLessThan(0);
@@ -62,8 +62,8 @@ describe('isVersionVulnerable', () => {
   });
 
   it('never guesses when the version is unknown', () => {
-    // Reporting a vulnerability against an unresolvable version would be a
-    // fabricated finding.
+
+
     expect(isVersionVulnerable(null, advisory)).toBe(false);
     for (const version of ['*', 'x', 'latest', 'workspace:*', 'file:../lib', 'git+https://x/y.git']) {
       expect(isVersionVulnerable(version, advisory)).toBe(false);
@@ -121,7 +121,7 @@ describe('dependency scanner', () => {
   });
 
   it('survives a malformed manifest without throwing', async () => {
-    // A broken package.json must degrade to "no findings", never crash the scan.
+
     const findings = await scanSource(dependencyScanner, 'package.json', '{ not valid json');
     expect(findings).toEqual([]);
   });

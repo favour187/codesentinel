@@ -5,13 +5,13 @@ import { describe, expect, it } from 'vitest';
 
 import { parseFile, parserFor, SUPPORTED_LANGUAGES } from '@/twin/parsers';
 
-/**
- * Parser tests.
- *
- * These assert extracted structure, not just "it did not throw". A parser that
- * silently returns nothing is worse than one that crashes, because the graph
- * built on top of it looks fine while being empty.
- */
+
+
+
+
+
+
+
 
 const FIXTURE_ROOT = path.join(process.cwd(), 'fixtures', 'demo-repo');
 
@@ -48,7 +48,7 @@ describe('typescript/javascript parser', () => {
     expect(login?.kind).toBe('function');
     expect(login?.parameters).toEqual(['req', 'res']);
     expect(login?.lineStart).toBeLessThan(login?.lineEnd ?? 0);
-    // One `if` plus the `||` fallback on the role, so two decision points.
+
     expect(login?.complexity).toBe(2);
   });
 
@@ -167,11 +167,11 @@ const user = await prisma.user.findMany();
   });
 
   it('does not mistake non-database methods that share ORM member names', () => {
-    /*
-     * Regression: `crypto.createHash('md5').update(x)` was recorded as a
-     * database write because `update` is an ORM member name. An invented
-     * relationship is worse than a missing one.
-     */
+
+
+
+
+
     const source = `
 const crypto = require('crypto');
 function sign(payload) {
@@ -209,12 +209,12 @@ async function save(row) {
     expect(Array.isArray(parsed.symbols)).toBe(true);
   });
 
-  /**
-   * CommonJS exports its declarations at the bottom of the file rather than on
-   * the declaration itself. Reading only the `export` keyword marked every
-   * symbol in a CJS repository private, which silently emptied every feature
-   * that filters on the public surface.
-   */
+
+
+
+
+
+
   describe('CommonJS exports', () => {
     const cjs = [
       'function createSession(userId) { return { userId }; }',
@@ -330,7 +330,7 @@ def _private_helper():
   it('computes symbol line ranges that exclude trailing decorators', () => {
     const parsed = parseFile('app/repo.py', source, 'python');
     const repo = parsed.symbols.find((s) => s.name === 'UserRepo');
-    // The class must not extend over the @app.post decorator on line 18.
+
     expect(repo?.lineEnd).toBeLessThan(18);
     const create = parsed.symbols.find((s) => s.name === 'create_user');
     expect(create?.lineStart).toBe(19);
@@ -338,7 +338,7 @@ def _private_helper():
 
   it('counts branches as complexity', () => {
     const parsed = parseFile('app/repo.py', source, 'python');
-    // `for` + `if ... and ...`
+
     expect(parsed.symbols.find((s) => s.name === 'create_user')?.complexity).toBeGreaterThanOrEqual(2);
   });
 
@@ -361,8 +361,8 @@ def _private_helper():
     const sql = parsed.databaseUses.find((u) => u.via === 'sql');
     expect(sql?.target).toBe('users');
 
-    // Django model access names the model; cursor calls must not report the
-    // cursor variable as a table.
+
+
     const targets = parsed.databaseUses.map((u) => u.target);
     expect(targets).toContain('User');
     expect(targets).not.toContain('cur');

@@ -2,17 +2,17 @@ import { createFinding } from '../finding';
 import type { Finding, ScanContext, Scanner, SourceFile } from '../types';
 import type { Severity } from '@/db/schema';
 
-/**
- * Infrastructure-as-code scanner (Dockerfiles).
- *
- * Container misconfiguration is a common real-world weakness that source-level
- * rules never see, and Dockerfiles are simple enough to analyse accurately
- * line-by-line.
- */
+
+
+
+
+
+
+
 
 const SCANNER_ID = 'infrastructure';
 
-/** Base images whose major version is long out of support. */
+
 const EOL_IMAGES: Array<{ pattern: RegExp; note: string }> = [
   { pattern: /^node:(?:[0-9]|1[0-7])(?:[.-]|$)/i, note: 'Node.js 17 and earlier are end-of-life.' },
   { pattern: /^python:(?:2(?:\.\d+)?|3\.[0-7])(?:[.-]|$)/i, note: 'Python 3.7 and earlier are end-of-life.' },
@@ -44,7 +44,7 @@ export function analyseDockerfile(file: SourceFile): DockerFinding[] {
     if (!line || line.startsWith('#')) return;
     const lineNumber = index + 1;
 
-    /* ------------------------------ base image ------------------------------ */
+
     const from = /^FROM\s+(\S+)/i.exec(line);
     if (from?.[1]) {
       const image = from[1];
@@ -82,11 +82,11 @@ export function analyseDockerfile(file: SourceFile): DockerFinding[] {
       }
     }
 
-    /* -------------------------------- USER --------------------------------- */
+
     const user = /^USER\s+(\S+)/i.exec(line);
     if (user?.[1]) lastUser = { value: user[1], line: lineNumber };
 
-    /* ------------------------- secrets in ENV/ARG --------------------------- */
+
     const env = /^(?:ENV|ARG)\s+([A-Za-z_][\w]*)[\s=]+(.+)$/i.exec(line);
     if (env?.[1] && env[2]) {
       const name = env[1];
@@ -114,7 +114,7 @@ export function analyseDockerfile(file: SourceFile): DockerFinding[] {
 
     if (/^HEALTHCHECK/i.test(line)) hasHealthcheck = true;
 
-    /* ------------------------------ curl | sh ------------------------------- */
+
     if (/^RUN\b/i.test(line) && /(?:curl|wget)[^|]*\|\s*(?:ba)?sh/i.test(line)) {
       results.push({
         ruleId: 'infra/docker-remote-script-execution',
@@ -130,7 +130,7 @@ export function analyseDockerfile(file: SourceFile): DockerFinding[] {
       });
     }
 
-    /* ---------------------------- --unsafe-perm ----------------------------- */
+
     if (/--unsafe-perm/i.test(line)) {
       results.push({
         ruleId: 'infra/docker-unsafe-perm',
@@ -147,7 +147,7 @@ export function analyseDockerfile(file: SourceFile): DockerFinding[] {
     }
   });
 
-  /* ------------------------- container runs as root ------------------------- */
+
   const runsAsRoot = lastUser === null || /^(?:root|0)$/i.test((lastUser as { value: string }).value);
   if (runsAsRoot) {
     results.push({

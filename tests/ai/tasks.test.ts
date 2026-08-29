@@ -10,14 +10,14 @@ import { askCodebase, extractKeywords, retrieveRelevantFiles } from '@/ai/tasks/
 import { createTestDb, seedRepository, seedScan } from '../helpers/test-db';
 import type { TestDb } from '../helpers/test-db';
 
-/**
- * End-to-end tests for the AI task layer with stubbed providers.
- *
- * The point of these is not that the model says something sensible — it is
- * that the surrounding machinery refuses to pass off ungrounded output as
- * real: fixes that do not apply are rejected, cited files that were not
- * supplied are dropped, and every response is schema-validated.
- */
+
+
+
+
+
+
+
+
 
 let db: TestDb;
 let repositoryId: string;
@@ -27,7 +27,7 @@ vi.mock('@/db', async () => {
   return { ...actual, getDb: async () => db };
 });
 
-/** The real file that the demo fixture and these tests analyse. */
+
 const VULNERABLE_SOURCE = [
   'const express = require("express");',
   'const db = require("./db");',
@@ -304,7 +304,7 @@ describe('generateFix', () => {
     if (result.ok) throw new Error('expected rejection');
     expect(result.reason).toBe('ungrounded');
 
-    // Nothing ungrounded may be persisted for a reviewer to act on.
+
     const rows = await db.select().from(fixes);
     expect(rows).toHaveLength(0);
   });
@@ -380,7 +380,7 @@ describe('generateTestsForFinding', () => {
     expect(result.data.framework).toBe('jest');
     expect(result.data.cases[0]?.kind).toBe('regression');
 
-    // The detected framework must be stated in the prompt, not guessed.
+
     const user = provider.prompts[0]?.messages.find((m) => m.role === 'user')?.content ?? '';
     expect(user).toContain('jest');
   });
@@ -602,7 +602,7 @@ describe('codebase chat', () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error('expected success');
-    // The invented path must not be presented to the user as a citation.
+
     expect(result.data.relevantFiles).not.toContain('src/auth/magic.ts');
   });
 

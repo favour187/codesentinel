@@ -6,20 +6,20 @@ import type { RiskFactor } from '@/guardian/risk';
 import { getRepositoryPolicy } from './repositories';
 import type { RepositoryPolicy } from './repositories';
 
-/**
- * Read models for the Guardian page.
- *
- * All ordering and limiting happens in SQL — the platform rule from the
- * analysis queries applies here too: never fetch a page of rows and re-sort it
- * in JavaScript, because the page boundary silently drops the rows that matter.
- */
+
+
+
+
+
+
+
 
 export interface GuardianConnectionStatus {
   repositoryId: string;
   fullName: string;
   source: string;
   guardianEnabled: boolean;
-  /** True when this repository is linked to a live GitHub App installation. */
+
   installed: boolean;
   defaultBranch: string;
   lastScanAt: Date | null;
@@ -66,11 +66,11 @@ export interface GuardedPullRequest {
   additions: number;
   deletions: number;
   updatedAt: Date;
-  /**
-   * Total findings present on the PR head at the last scan.
-   * NOT the same as "new findings" — the introduced/resolved split lives in
-   * `riskFactors`, which is computed against the base commit at scan time.
-   */
+
+
+
+
+
   findingsOnHead: number;
   checkConclusion: string | null;
 }
@@ -168,8 +168,8 @@ export async function getGuardianOverview(repositoryId: string): Promise<Guardia
       })
       .from(pullRequests)
       .where(eq(pullRequests.repositoryId, repositoryId))
-      // Risk descending so the dangerous PR is never pushed off the page by
-      // a newer harmless one.
+
+
       .orderBy(desc(pullRequests.riskScore), desc(pullRequests.updatedAt))
       .limit(10),
     db
@@ -191,12 +191,12 @@ export async function getGuardianOverview(repositoryId: string): Promise<Guardia
       .where(eq(scanJobs.repositoryId, repositoryId)),
   ]);
 
-  /*
-   * Per-PR finding counts and check conclusion, resolved in ONE grouped query
-   * rather than a query per pull request. `distinct on` picks the newest scan
-   * for each PR, and the finding count is joined off that same scan so the two
-   * numbers always describe the same run.
-   */
+
+
+
+
+
+
   const perPullRequest = await db
     .select({
       pullRequestId: scans.pullRequestId,
@@ -216,7 +216,7 @@ export async function getGuardianOverview(repositoryId: string): Promise<Guardia
     )
     .orderBy(scans.pullRequestId, desc(scans.createdAt));
 
-  // Keep the first row per PR — the ORDER BY above makes that the newest scan.
+
   const latestByPr = new Map<string, { checkConclusion: string | null; findingCount: number }>();
   for (const row of perPullRequest) {
     if (!row.pullRequestId || latestByPr.has(row.pullRequestId)) continue;

@@ -21,7 +21,7 @@ import {
 import { DEMO_REPO_FULL_NAME, demoFixtureExists, demoFixturePath } from '@/lib/demo/fixture';
 import { executeScan } from '@/scanner/persistence';
 
-/** Idempotent: attach the bundled fixture to this user. */
+
 export async function ensureDemoRepository(userId: string): Promise<string | null> {
   if (!(await demoFixtureExists())) return null;
   const database = await db();
@@ -60,12 +60,12 @@ export async function ensureDemoRepository(userId: string): Promise<string | nul
   return created.id;
 }
 
-/**
- * Wipe demo analysis only, then rescan the fixture.
- *
- * Refuses any repository that is not `source: 'demo'`. Real GitHub repos are
- * never touched.
- */
+
+
+
+
+
+
 export async function resetDemoRepository(repositoryId: string): Promise<{ scanId: string; findings: number }> {
   const database = await db();
   const [repo] = await database.select().from(repositories).where(eq(repositories.id, repositoryId)).limit(1);

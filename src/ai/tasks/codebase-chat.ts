@@ -16,15 +16,15 @@ import {
 } from '../context';
 import type { FindingContext } from '../context';
 
-/**
- * Item 7: Codebase Intelligence.
- *
- * Not a chatbot. Every question triggers retrieval over this repository's scan
- * data, and the answer is returned with the files and findings it was built
- * from so the user can verify it. If retrieval finds nothing relevant, the
- * honest answer is "I don't have evidence for that" — which the prompt
- * requires and the UI displays.
- */
+
+
+
+
+
+
+
+
+
 
 export interface ChatSource {
   readonly kind: 'file' | 'finding';
@@ -47,7 +47,7 @@ const CHAT_HINT = promptSchemaHint({
   claims: CLAIMS_HINT,
 });
 
-/** Words that carry no retrieval signal. */
+
 const STOPWORDS = new Set([
   'the', 'a', 'an', 'is', 'are', 'was', 'were', 'do', 'does', 'did', 'how', 'what', 'why', 'where', 'when',
   'which', 'who', 'this', 'that', 'these', 'those', 'and', 'or', 'but', 'for', 'with', 'from', 'into', 'about',
@@ -66,15 +66,15 @@ export function extractKeywords(question: string): string[] {
   return [...new Set(words)].slice(0, 12);
 }
 
-/**
- * Retrieve the files most likely to answer a question.
- *
- * Scored by path matching plus a nudge toward architecturally significant
- * files. Deliberately simple and explainable — an embedding index would be a
- * second data store to keep in sync with every scan, and for repository-scale
- * questions grounded in scan metadata this performs well enough to justify
- * the far smaller surface area.
- */
+
+
+
+
+
+
+
+
+
 export async function retrieveRelevantFiles(
   repositoryId: string,
   question: string,
@@ -100,8 +100,8 @@ export async function retrieveRelevantFiles(
 
   if (rows.length === 0) return [];
 
-  // Reverse-import counts: a file many others import is more likely to be the
-  // answer to a "how does X work" question than a leaf.
+
+
   const importCounts = new Map<string, number>();
   for (const row of rows) {
     for (const imported of row.imports) importCounts.set(imported, (importCounts.get(imported) ?? 0) + 1);
@@ -129,11 +129,11 @@ export async function retrieveRelevantFiles(
 
   const matched = scored.filter((f) => f.score > 0).sort((a, b) => b.score - a.score || a.path.localeCompare(b.path));
 
-  /*
-   * Nothing matched by keyword: fall back to the structurally most important
-   * files so a general question ("what does this project do") still gets a
-   * grounded answer rather than a refusal.
-   */
+
+
+
+
+
   if (matched.length === 0) {
     return scored
       .map((f) => ({ ...f, score: importCounts.get(f.path) ?? 0 }))
@@ -144,7 +144,7 @@ export async function retrieveRelevantFiles(
   return matched.slice(0, limit);
 }
 
-/** Findings matching the question's keywords, plus the repository's worst. */
+
 async function retrieveRelevantFindings(
   repositoryId: string,
   question: string,
@@ -189,7 +189,7 @@ async function retrieveRelevantFindings(
   }));
 }
 
-/** Per-file source budget, so one large file cannot crowd out the rest. */
+
 const MAX_CHARS_PER_FILE = 6000;
 const MAX_FILES_WITH_SOURCE = 4;
 
@@ -247,8 +247,8 @@ export async function askCodebase(
     },
   ];
 
-  // Actual source for the top few files. This is what separates a grounded
-  // answer from a plausible one.
+
+
   let budgetedFiles = 0;
   for (const file of relevant) {
     if (budgetedFiles >= MAX_FILES_WITH_SOURCE) break;
@@ -303,11 +303,11 @@ export async function askCodebase(
 
   if (!result.ok) return result;
 
-  /*
-   * Drop cited paths that were not actually supplied. A model citing a
-   * plausible-but-absent path is the exact failure this feature exists to
-   * avoid, and silently trimming is better than showing a broken link.
-   */
+
+
+
+
+
   const supplied = new Set(paths);
   const verifiedFiles = result.data.relevantFiles.filter((p) => supplied.has(p));
 
@@ -324,7 +324,7 @@ export async function askCodebase(
   };
 }
 
-/** Starting points shown in the UI so the feature is not a blank box. */
+
 export const SUGGESTED_PROMPTS: readonly string[] = [
   'What does this repository do, and how is it structured?',
   'How does authentication work in this codebase?',

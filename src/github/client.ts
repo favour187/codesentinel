@@ -1,22 +1,22 @@
 import { GITHUB_API, getInstallationToken } from './app-auth';
 import { createLogger } from '@/lib/logger';
 
-/**
- * Thin GitHub REST client scoped to what the guardian actually needs.
- *
- * Deliberately hand-rolled instead of pulling in Octokit: we use ~8 endpoints,
- * and this keeps the dependency surface (and the supply-chain risk a security
- * product should care about) small. It also lets every call be injected with a
- * fake `fetch` in tests.
- */
+
+
+
+
+
+
+
+
 
 const log = createLogger('github:client');
 
 export interface GitHubClientOptions {
-  /** Installation token, or a user OAuth token for read-only flows. */
+
   token: string;
   fetchImpl?: typeof fetch;
-  /** Retry budget for transient failures (5xx / secondary rate limits). */
+
   maxRetries?: number;
 }
 
@@ -76,7 +76,7 @@ export class GitHubClient {
     this.maxRetries = options.maxRetries ?? 2;
   }
 
-  /** Build a client authenticated as a GitHub App installation. */
+
   static async forInstallation(installationId: number, fetchImpl: typeof fetch = fetch): Promise<GitHubClient> {
     const token = await getInstallationToken(installationId, fetchImpl);
     return new GitHubClient({ token, fetchImpl });
@@ -110,7 +110,7 @@ export class GitHubClient {
 
       const text = await response.text().catch(() => '');
 
-      // 403 with a rate-limit reset, or 5xx, are worth retrying; 4xx are not.
+
       const retryable = response.status >= 500 || response.status === 429 || isSecondaryRateLimit(response, text);
       lastError = new GitHubApiError(response.status, endpoint, `${response.status} ${text.slice(0, 200)}`);
 
@@ -124,9 +124,9 @@ export class GitHubClient {
     throw lastError ?? new Error('GitHub request failed');
   }
 
-  /* ---------------------------------------------------------------------- */
-  /* Repository & pull request reads                                        */
-  /* ---------------------------------------------------------------------- */
+
+
+
 
   async getRepository(owner: string, repo: string): Promise<{
     id: number;
@@ -176,13 +176,13 @@ export class GitHubClient {
     return this.request('GET', `/repos/${owner}/${repo}/pulls/${number}`);
   }
 
-  /**
-   * List files changed in a pull request.
-   *
-   * Paginated at 100/page; GitHub caps this endpoint at 3000 files, and very
-   * large PRs are exactly the ones where a truncated diff would silently
-   * under-report risk — so the caller is told via the `truncated` flag.
-   */
+
+
+
+
+
+
+
   async listPullRequestFiles(
     owner: string,
     repo: string,
@@ -204,7 +204,7 @@ export class GitHubClient {
     return { files, truncated: true };
   }
 
-  /** Raw file contents at a ref. Returns null for missing files (404 is normal). */
+
   async getFileContent(owner: string, repo: string, path: string, ref: string): Promise<string | null> {
     try {
       return await this.request<string>(
@@ -219,7 +219,7 @@ export class GitHubClient {
     }
   }
 
-  /** Download a repository tarball at a ref, following GitHub's redirect. */
+
   async downloadTarball(owner: string, repo: string, ref: string): Promise<ArrayBuffer> {
     const response = await this.fetchImpl(
       `${GITHUB_API}/repos/${owner}/${repo}/tarball/${encodeURIComponent(ref)}`,
@@ -238,9 +238,9 @@ export class GitHubClient {
     return response.arrayBuffer();
   }
 
-  /* ---------------------------------------------------------------------- */
-  /* Check runs                                                             */
-  /* ---------------------------------------------------------------------- */
+
+
+
 
   async createCheckRun(owner: string, repo: string, options: CheckRunOptions): Promise<{ id: number }> {
     return this.request('POST', `/repos/${owner}/${repo}/check-runs`, {
@@ -267,9 +267,9 @@ export class GitHubClient {
     });
   }
 
-  /* ---------------------------------------------------------------------- */
-  /* Issue comments                                                         */
-  /* ---------------------------------------------------------------------- */
+
+
+
 
   async createIssueComment(owner: string, repo: string, number: number, body: string): Promise<{ id: number }> {
     return this.request('POST', `/repos/${owner}/${repo}/issues/${number}/comments`, { body });
@@ -288,7 +288,7 @@ export class GitHubClient {
     }
   }
 
-  /** Repositories the signed-in user can access (OAuth token). */
+
   async listUserRepositories(): Promise<
     Array<{
       id: number;
@@ -305,7 +305,7 @@ export class GitHubClient {
     return this.request('GET', '/user/repos?per_page=50&sort=updated&affiliation=owner,collaborator');
   }
 
-  /** Repositories visible to the current installation. */
+
   async listInstallationRepositories(): Promise<Array<{ id: number; full_name: string; default_branch: string }>> {
     const payload = await this.request<{
       repositories: Array<{ id: number; full_name: string; default_branch: string }>;

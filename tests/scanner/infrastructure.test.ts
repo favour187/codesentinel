@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { analyseDockerfile, infrastructureScanner } from '@/scanner/scanners/infrastructure';
 import { ruleIds, scanContext, sourceFile } from './helpers/source';
 
-/**
- * Infrastructure findings are the ones a source-level scanner never sees, so
- * both directions matter: the misconfiguration must be caught, and a correctly
- * hardened Dockerfile must come back completely clean.
- */
+
+
+
+
+
 
 function dockerfile(content: string) {
   return sourceFile('Dockerfile', content);
@@ -20,7 +20,7 @@ function rulesFor(content: string): string[] {
   return analyse(content).map((r) => r.ruleId);
 }
 
-/** A Dockerfile with every rule satisfied — the negative control. */
+
 const HARDENED = [
   'FROM node:22.11.0-slim',
   'WORKDIR /app',
@@ -131,7 +131,7 @@ describe('analyseDockerfile — secrets in image layers', () => {
 
     expect(finding).toBeDefined();
     expect(finding?.severity).toBe('critical');
-    // The raw value must be handed to the redactor, never emitted as-is.
+
     expect(finding?.redact).toContain('sk_live_abcdef1234567890');
   });
 

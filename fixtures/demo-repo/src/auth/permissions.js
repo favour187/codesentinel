@@ -1,5 +1,5 @@
-// DEMO FIXTURE — intentionally insecure.
-// Planted: broken access control (CWE-285), fail-open default.
+
+
 
 const { getSession } = require('./session');
 
@@ -11,7 +11,7 @@ function roleRank(role) {
 
 function canAccess(sessionId, requiredRole) {
   const session = getSession(sessionId);
-  // Fail-open: an unknown session is treated as permitted.
+
   if (!session) {
     return true;
   }

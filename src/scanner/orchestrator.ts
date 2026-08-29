@@ -15,19 +15,19 @@ import type {
   VulnerabilityRecord,
 } from './types';
 
-/**
- * Scan orchestration.
- *
- * Runs every available scanner over one discovered file set, merges the
- * results and computes scores. Design rules:
- *
- *   - One discovery pass, shared by all scanners. Files are read once.
- *   - A scanner that throws is recorded as `error` and the run continues. One
- *     bad rule must never lose the other scanners' findings.
- *   - A scanner whose prerequisites are missing is recorded as `skipped`, never
- *     silently reported as "no findings".
- *   - Scanners run concurrently; they are pure functions of the context.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const log = createLogger('scanner');
 
@@ -44,29 +44,29 @@ export interface ScanResult {
   findings: Finding[];
   runs: ScannerRun[];
   stats: RepositoryStats;
-  /** The exact file set every scanner saw — reused for repository intelligence. */
+
   files: SourceFile[];
   scores: ScoringResult;
   severityCounts: ReturnType<typeof countBySeverity>;
   categoryCounts: Record<string, number>;
   durationMs: number;
-  /** Which vulnerability data source was used, for honest UI attribution. */
+
   vulnerabilityProvider: string;
-  /**
-   * Everything the provider returned during this scan, keyed
-   * `"{ecosystem}:{name}"`. Captured as the dependency scanner runs so
-   * persistence can store per-dependency advisories without a second lookup.
-   */
+
+
+
+
+
   vulnerabilities: Map<string, VulnerabilityRecord[]>;
 }
 
-/**
- * Wraps a provider so the orchestrator can see what it returned.
- *
- * The dependency scanner owns the lookup call, but the results are also needed
- * to populate the `dependencies` table. Recording them here avoids a duplicate
- * (and potentially networked) lookup.
- */
+
+
+
+
+
+
+
 class RecordingProvider implements VulnerabilityProvider {
   readonly name: string;
   readonly description: string;
@@ -84,7 +84,7 @@ class RecordingProvider implements VulnerabilityProvider {
   }
 }
 
-/** Hard ceiling so one pathological file can't hang a scan. */
+
 const SCANNER_TIMEOUT_MS = 60_000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {

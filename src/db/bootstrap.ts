@@ -4,18 +4,18 @@ import { createLogger } from '@/lib/logger';
 
 const log = createLogger('db:bootstrap');
 
-/**
- * Idempotent schema bootstrap.
- *
- * Kept as explicit `CREATE TABLE IF NOT EXISTS` DDL (rather than only
- * drizzle-kit migration files) so that:
- *   - `npm run dev` works instantly against an empty PGlite database,
- *   - tests can spin up a fresh in-memory database in milliseconds,
- *   - production still uses versioned drizzle-kit migrations (npm run db:migrate).
- *
- * This DDL mirrors src/db/schema.ts exactly; a test asserts they stay in sync.
- */
-export const BOOTSTRAP_SQL = /* sql */ `
+
+
+
+
+
+
+
+
+
+
+
+export const BOOTSTRAP_SQL =  `
 CREATE TABLE IF NOT EXISTS users (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   github_id integer NOT NULL,
@@ -502,7 +502,7 @@ CREATE TABLE IF NOT EXISTS policy_rules (
 CREATE INDEX IF NOT EXISTS policy_rules_repo_idx ON policy_rules (repository_id);
 `;
 
-/** All table names, in dependency order (useful for tests / teardown). */
+
 export const TABLE_NAMES = [
   'users',
   'installations',
@@ -534,12 +534,12 @@ export const TABLE_NAMES = [
 
 export async function bootstrapSchema(database: Database): Promise<void> {
   const started = Date.now();
-  // pgcrypto provides gen_random_uuid() on older Postgres; PG13+ has it builtin.
+
   try {
     await database.execute(sql.raw('CREATE EXTENSION IF NOT EXISTS pgcrypto;'));
   } catch {
-    // Managed providers may forbid CREATE EXTENSION; gen_random_uuid() is
-    // built in from PostgreSQL 13 onward, so this is non-fatal.
+
+
   }
 
   for (const statement of splitStatements(BOOTSTRAP_SQL)) {
@@ -548,14 +548,14 @@ export async function bootstrapSchema(database: Database): Promise<void> {
   log.info('Schema ready', { durationMs: Date.now() - started, tables: TABLE_NAMES.length });
 }
 
-/**
- * Split DDL on semicolons at statement boundaries.
- *
- * Comment lines are stripped *before* splitting, not filtered out after. A
- * semicolon inside a `--` comment would otherwise cut the text mid-sentence
- * and hand the fragment to the server as a statement, which fails with a
- * baffling syntax error pointing at an English word.
- */
+
+
+
+
+
+
+
+
 export function splitStatements(ddl: string): string[] {
   const withoutComments = ddl
     .split('\n')

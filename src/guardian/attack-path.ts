@@ -1,19 +1,19 @@
 import type { GraphEdge } from '@/twin/graph';
 import { fileOfKey, isRouteKey, isDatabaseKey, labelOfKey } from '@/twin/graph';
 
-/**
- * Defensive attack-path reasoning.
- *
- * Walks stored edges from HTTP entry points toward databases and auth-like
- * files. Labels are conservative:
- *
- *   CONFIRMED — a finding sits on a file that is on a complete path
- *               (route → … → database or auth).
- *   LIKELY    — a complete path exists and a finding sits one hop away.
- *   POTENTIAL — a complete path exists, no finding on it.
- *
- * Never claims exploitability. Never describes how to exploit.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export type AttackConfidence = 'confirmed' | 'likely' | 'potential';
 

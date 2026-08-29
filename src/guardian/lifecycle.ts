@@ -1,18 +1,18 @@
-/**
- * Finding identity over time.
- *
- * Fingerprints distinguish NEW / KNOWN / REGRESSED / RESOLVED / REOPENED
- * without inventing history.
- */
+
+
+
+
+
+
 
 export type FindingLifecycle = 'new' | 'known' | 'regressed' | 'resolved' | 'reopened';
 
 export interface LifecycleInput {
   readonly fingerprint: string;
   readonly currentlyOpen: boolean;
-  /** First time this fingerprint was seen open. */
+
   readonly firstSeenAt: Date | null;
-  /** Last time this fingerprint was marked resolved. */
+
   readonly lastResolvedAt: Date | null;
   readonly previouslyOpen: boolean;
 }

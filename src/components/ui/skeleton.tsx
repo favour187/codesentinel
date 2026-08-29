@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 
-/** Loading placeholder. Used by every route's loading.tsx. */
+
 export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return <div className={cn('shimmer rounded-md', className)} aria-hidden="true" {...props} />;
 }

@@ -21,14 +21,14 @@ import {
 } from '../context';
 import { readRepositoryFile } from '@/analysis/source';
 
-/**
- * Items 1 and 2: explain a finding, and assess whether it is a false positive.
- *
- * Both tasks are built from the same evidence bundle, since the question "is
- * this real" and the question "what does this mean" are answered from exactly
- * the same context. Assembling it once keeps the two answers consistent with
- * each other.
- */
+
+
+
+
+
+
+
+
 
 export interface FindingEvidence {
   readonly finding: NonNullable<Awaited<ReturnType<typeof getFindingById>>>;
@@ -36,13 +36,13 @@ export interface FindingEvidence {
   readonly sources: readonly string[];
 }
 
-/**
- * Gather everything known about a finding.
- *
- * Returns null when the finding does not exist. Every other piece is optional:
- * a finding with no file path, no source access and no neighbours still gets
- * an explanation, just a less specific one.
- */
+
+
+
+
+
+
+
 export async function collectFindingEvidence(findingId: string): Promise<FindingEvidence | null> {
   const finding = await getFindingById(findingId);
   if (!finding) return null;
@@ -83,8 +83,8 @@ export async function collectFindingEvidence(findingId: string): Promise<Finding
         content: excerpt.text,
       });
     } else if (finding.evidence) {
-      // No live source access (e.g. no GitHub App installed). The stored
-      // excerpt is already redacted and is better than nothing.
+
+
       sections.push({ label: 'CODE EXCERPT (captured at scan time)', content: finding.evidence });
     }
 
@@ -190,13 +190,13 @@ const FALSE_POSITIVE_HINT = promptSchemaHint({
   confidence: CONFIDENCE_HINT,
 });
 
-/**
- * Item 2. Advisory only.
- *
- * The verdict never changes a finding's status by itself — it is shown to a
- * human who decides. A model that wrongly dismisses a real SQL injection must
- * not be able to make it disappear.
- */
+
+
+
+
+
+
+
 export async function analyzeFalsePositive(
   findingId: string,
   options: RouterOptions & { noCache?: boolean } = {},

@@ -16,7 +16,7 @@ export interface CurrentUser {
   isDemo: boolean;
 }
 
-/** Resolve the signed-in user from the session cookie, or null. */
+
 export async function getCurrentUser(): Promise<CurrentUser | null> {
   const session = await getSession();
   if (!session) return null;
@@ -36,7 +36,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   };
 }
 
-/** Throwing variant for API routes / server actions. */
+
 export async function requireUser(): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) throw new UnauthorizedError();
@@ -59,10 +59,10 @@ export class ForbiddenError extends Error {
   }
 }
 
-/**
- * Authorization check: a user may access a repository when they own it or are
- * an explicit member. Every repository-scoped route must go through this.
- */
+
+
+
+
 export async function assertRepositoryAccess(userId: string, repositoryId: string): Promise<void> {
   const database = await db();
 
@@ -87,10 +87,10 @@ export async function assertRepositoryAccess(userId: string, repositoryId: strin
   }
 }
 
-/**
- * Decrypt a user's GitHub OAuth token for server-side API calls.
- * Returns null when the user has no token (e.g. the demo user).
- */
+
+
+
+
 export async function getUserGitHubToken(userId: string): Promise<string | null> {
   const database = await db();
   const [row] = await database

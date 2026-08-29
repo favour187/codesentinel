@@ -1,13 +1,13 @@
-/**
- * Minimal structured logger.
- *
- * Deliberately dependency-free. Emits single-line JSON in production (friendly
- * to Vercel/Datadog log drains) and readable text in development.
- *
- * SECURITY: `redact()` strips values that look like credentials before they can
- * reach a log sink. CodeSentinel scans for secrets, so it must never leak one
- * into its own logs.
- */
+
+
+
+
+
+
+
+
+
+
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 

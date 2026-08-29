@@ -3,28 +3,28 @@ import type { Finding } from '@/scanner/types';
 import type { PullRequestRisk } from './risk';
 import type { CheckAnnotation, CheckRunOptions } from '@/github/client';
 
-/**
- * Renders guardian results into GitHub surfaces: the Check Run and the PR
- * comment.
- *
- * Rules that shape everything here:
- *  - Evidence is already redacted by the scanner, but this layer never prints
- *    an evidence string for a secret finding at all. A PR comment is public on
- *    open-source repositories; even a masked credential is a needless leak.
- *  - Output is bounded. A 200-finding PR must not produce a 200-entry comment
- *    that nobody reads and that GitHub truncates at 65536 characters anyway.
- *  - Everything states *why* something is risky and what to do, because the
- *    comment is often the only thing a reviewer reads.
- */
 
-/** GitHub hard-limits comment bodies; stay well clear. */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const MAX_COMMENT_CHARS = 60_000;
-/** GitHub accepts at most 50 annotations per Check Run request. */
+
 export const MAX_ANNOTATIONS = 50;
-/** Findings listed in full in the comment before collapsing to a count. */
+
 const MAX_LISTED_FINDINGS = 15;
 
-/** Marker that lets the guardian find and update its own comment. */
+
 export const COMMENT_MARKER = '<!-- codesentinel:guardian-report -->';
 
 const SEVERITY_EMOJI: Record<Severity, string> = {
@@ -37,7 +37,7 @@ const SEVERITY_EMOJI: Record<Severity, string> = {
 
 const SEVERITY_RANK: Record<Severity, number> = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
 
-/** Secret findings never get their evidence echoed into a public surface. */
+
 function isSecretFinding(finding: Finding): boolean {
   return finding.category === 'secrets' || finding.ruleId.startsWith('secret/');
 }
@@ -46,16 +46,16 @@ export interface ReportContext {
   repositoryFullName: string;
   pullRequestNumber: number;
   headSha: string;
-  /** Absolute URL of the guardian page for this repository. */
+
   detailsUrl: string;
   failOnSeverity: Severity;
-  /** Scanner runs that were skipped or errored — surfaced honestly. */
+
   degraded?: Array<{ id: string; status: 'error' | 'skipped'; message?: string }>;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Pull request comment                                                       */
-/* -------------------------------------------------------------------------- */
+
+
+
 
 export function renderPullRequestComment(risk: PullRequestRisk, ctx: ReportContext): string {
   const lines: string[] = [COMMENT_MARKER];
@@ -66,7 +66,7 @@ export function renderPullRequestComment(risk: PullRequestRisk, ctx: ReportConte
   lines.push(risk.summary);
   lines.push('');
 
-  /* Headline table — the "is this safe to merge?" answer. */
+
   lines.push('| | |');
   lines.push('|---|---|');
   lines.push(`| **Risk** | ${risk.score}/100 (${risk.level}) |`);
@@ -84,7 +84,7 @@ export function renderPullRequestComment(risk: PullRequestRisk, ctx: ReportConte
     );
   }
 
-  /* New findings, worst first. */
+
   if (risk.newFindings.length > 0) {
     lines.push('### New findings introduced by this pull request');
     lines.push('');
@@ -107,8 +107,8 @@ export function renderPullRequestComment(risk: PullRequestRisk, ctx: ReportConte
         lines.push('');
         lines.push(`**How to fix:** ${finding.remediation}`);
       }
-      // Evidence is shown for code-quality/security patterns but NEVER for
-      // credential material, even though it is already masked upstream.
+
+
       if (finding.evidence && !isSecretFinding(finding)) {
         lines.push('');
         lines.push('```');
@@ -128,7 +128,7 @@ export function renderPullRequestComment(risk: PullRequestRisk, ctx: ReportConte
     lines.push('');
   }
 
-  /* Why the risk score is what it is. */
+
   if (risk.factors.length > 0) {
     lines.push('### Why this risk score');
     lines.push('');
@@ -139,7 +139,7 @@ export function renderPullRequestComment(risk: PullRequestRisk, ctx: ReportConte
     lines.push('');
   }
 
-  /* Blast radius. */
+
   const { impactedFiles, affectedComponents, uncoveredChanges } = risk.blastRadius;
   if (impactedFiles.length > 0 || affectedComponents.length > 0 || uncoveredChanges.length > 0) {
     lines.push('### Blast radius');
@@ -162,7 +162,7 @@ export function renderPullRequestComment(risk: PullRequestRisk, ctx: ReportConte
     lines.push('');
   }
 
-  /* Recommended tests. */
+
   if (risk.recommendedTests.length > 0) {
     lines.push('### Recommended tests');
     lines.push('');
@@ -170,7 +170,7 @@ export function renderPullRequestComment(risk: PullRequestRisk, ctx: ReportConte
     lines.push('');
   }
 
-  /* Honest degradation notice. */
+
   if (ctx.degraded && ctx.degraded.length > 0) {
     lines.push('### ⚠️ Incomplete analysis');
     lines.push('');
@@ -194,20 +194,20 @@ export function renderPullRequestComment(risk: PullRequestRisk, ctx: ReportConte
     : body;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Check run                                                                  */
-/* -------------------------------------------------------------------------- */
 
-/**
- * Build the Check Run payload.
- *
- * Conclusion mapping is deliberate:
- *  - `failure` only when policy says block — a check that fails on every
- *    informational finding gets muted by the team within a week.
- *  - `neutral` when findings exist below the threshold: visible, not blocking.
- *  - `action_required` when analysis itself was degraded, because "we could not
- *    check" must never look like "we checked and it is fine".
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
 export function buildCheckRun(risk: PullRequestRisk, ctx: ReportContext): CheckRunOptions {
   const degraded = (ctx.degraded ?? []).filter((r) => r.status === 'error');
 
@@ -269,12 +269,12 @@ function buildCheckText(risk: PullRequestRisk): string {
   return lines.join('\n');
 }
 
-/**
- * Inline annotations, worst-first, capped at GitHub's 50-per-request limit.
- *
- * Only findings with a real file and line can be annotated; repository-wide
- * findings (e.g. "no tests exist") have nowhere to point and stay in the summary.
- */
+
+
+
+
+
+
 export function buildAnnotations(findings: readonly Finding[]): CheckAnnotation[] {
   return [...findings]
     .filter((f): f is Finding & { filePath: string; lineStart: number } =>
@@ -289,8 +289,8 @@ export function buildAnnotations(findings: readonly Finding[]): CheckAnnotation[
       annotation_level: annotationLevel(finding.severity),
       title: `${finding.severity.toUpperCase()}: ${finding.title}`.slice(0, 255),
       message: buildAnnotationMessage(finding),
-      // raw_details would echo evidence; omitted for secrets for the same
-      // reason as in the comment.
+
+
       ...(finding.evidence && !isSecretFinding(finding)
         ? { raw_details: finding.evidence.slice(0, 500) }
         : {}),

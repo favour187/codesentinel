@@ -1,31 +1,31 @@
 import { createFinding } from '../finding';
 import type { Finding, ScanContext, Scanner, SourceFile } from '../types';
 
-/**
- * Code quality and reliability scanner.
- *
- * Covers the "obvious error-handling problems" and "obvious code-quality
- * issues" requirements. Rules are structural rather than stylistic — an
- * opinionated formatter already handles style, so flagging it here would just
- * bury the findings that matter. Everything below is a correctness or
- * maintainability risk.
- */
+
+
+
+
+
+
+
+
+
 
 const SCANNER_ID = 'quality';
 
-/**
- * Control-flow nesting depth for C-family languages.
- *
- * Counts only blocks opened by a control-flow keyword (if/else/for/while/
- * do/switch/try/catch/finally). Counting every brace instead would inflate the
- * number with function bodies, object literals and class bodies — a top-level
- * function containing one `if` would report depth 2, and the reported figure
- * would not match the "nests N levels deep" wording the finding uses. The
- * threshold is calibrated against control-flow depth, which is what actually
- * makes code hard to follow.
- */
+
+
+
+
+
+
+
+
+
+
+
 export function maxNestingDepth(lines: readonly string[]): { depth: number; line: number } {
-  // Tracks every open brace; only control-flow ones contribute to depth.
+
   const stack: boolean[] = [];
   let depth = 0;
   let maxDepth = 0;
@@ -48,14 +48,14 @@ export function maxNestingDepth(lines: readonly string[]): { depth: number; line
       inBlockComment = line.indexOf('*/', blockStart) === -1;
       line = line.slice(0, blockStart);
     }
-    // Strip line comments and string literals so braces inside them don't count.
+
     line = line.replace(/\/\/.*$/, '').replace(/(['"`])(?:\\.|(?!\1).)*\1/g, '""');
 
     for (let c = 0; c < line.length; c += 1) {
       const char = line[c];
       if (char === '{') {
-        // Look at the text preceding this brace on the line to decide whether
-        // the block it opens is a control-flow block.
+
+
         const isControl = CONTROL.test(line.slice(0, c));
         stack.push(isControl);
         if (isControl) {
@@ -74,7 +74,7 @@ export function maxNestingDepth(lines: readonly string[]): { depth: number; line
   return { depth: maxDepth, line: maxLine };
 }
 
-/** Python nests by indentation, so depth is derived from leading whitespace. */
+
 export function maxIndentDepth(lines: readonly string[]): { depth: number; line: number } {
   let maxDepth = 0;
   let maxLine = 0;
@@ -91,11 +91,11 @@ export function maxIndentDepth(lines: readonly string[]): { depth: number; line:
   return { depth: maxDepth, line: maxLine };
 }
 
-/**
- * Approximates cyclomatic complexity by counting branch points.
- * Not a substitute for a real AST pass, but stable and language-agnostic
- * enough to rank functions by risk.
- */
+
+
+
+
+
 export function estimateComplexity(content: string): number {
   const branches = content.match(
     /\b(?:if|else\s+if|elif|for|while|case|catch|except)\b|&&|\|\||\?\?|\?[^.:]/g,
@@ -112,10 +112,10 @@ function scanErrorHandling(file: SourceFile): Finding[] {
     const line = file.lines[i] ?? '';
     const trimmed = line.trim();
 
-    /* ------------------------- swallowed exceptions ------------------------- */
+
     const catchMatch = /\bcatch\s*(?:\([^)]*\))?\s*\{\s*$/.test(trimmed) || /^\s*except[^:]*:\s*$/.test(line);
     if (catchMatch) {
-      // Look ahead for a body that does nothing meaningful.
+
       const body: string[] = [];
       for (let j = i + 1; j < Math.min(file.lines.length, i + 6); j += 1) {
         const next = (file.lines[j] ?? '').trim();
@@ -156,7 +156,7 @@ function scanErrorHandling(file: SourceFile): Finding[] {
       }
     }
 
-    /* ------------------------ unchecked deep property ----------------------- */
+
     const chain = /\breturn\s+(\w+)\.(\w+)\.(\w+)/.exec(trimmed);
     if (chain && !trimmed.includes('?.') && !/\bthis\b|\bwindow\b|\bprocess\b|\bJSON\b|\bMath\b/.test(trimmed)) {
       findings.push(
@@ -182,7 +182,7 @@ function scanErrorHandling(file: SourceFile): Finding[] {
       );
     }
 
-    /* ------------------------- floating point money ------------------------- */
+
     if (/(?:amount|price|total|cost|balance|refund|fee|salary)\w*\s*[*/]\s*\d|\*\s*100\b/i.test(trimmed) &&
         /amount|price|total|cost|balance|refund|fee|cents|usd/i.test(trimmed) &&
         !/toFixed|Math\.round|Decimal|BigInt|Number\.isInteger/.test(trimmed)) {
@@ -209,7 +209,7 @@ function scanErrorHandling(file: SourceFile): Finding[] {
       );
     }
 
-    /* -------------------------- unbounded parameter ------------------------- */
+
     if (/function\s+\w*(?:discount|percent|rate|ratio)/i.test(trimmed) ||
         /(?:discount|percent)\w*\s*\/\s*100/i.test(trimmed)) {
       const hasGuard = file.content.includes('Math.min') || file.content.includes('Math.max') ||
@@ -295,12 +295,12 @@ function scanStructure(file: SourceFile): Finding[] {
     );
   }
 
-  /* ----------------------------- unused locals ---------------------------- */
+
   if (file.language === 'javascript' || file.language === 'typescript') {
     const declarations = [...file.content.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=/g)];
     for (const declaration of declarations) {
       const name = declaration[1];
-      if (!name || name.startsWith('_')) continue; // _foo is the conventional "intentionally unused"
+      if (!name || name.startsWith('_')) continue;
       const uses = file.content.split(new RegExp(`\\b${name.replace(/[$]/g, '\\$')}\\b`)).length - 1;
       if (uses <= 1) {
         const line = file.content.slice(0, declaration.index).split('\n').length;

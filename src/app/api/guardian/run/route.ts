@@ -6,21 +6,21 @@ import { requireUser, UnauthorizedError } from '@/lib/auth/current-user';
 import { getEnv } from '@/lib/env';
 import { createLogger } from '@/lib/logger';
 
-/**
- * Drain the scan queue.
- *
- * Two callers, two auth modes:
- *  - A **cron/scheduler** presents `Authorization: Bearer <CRON_SECRET>`. This
- *    is how Vercel Cron and any external scheduler drive the queue.
- *  - A **signed-in user** hitting "Run queued scans" in the UI.
- *
- * Unauthenticated access is refused outright: this endpoint performs real work
- * against the GitHub API and would otherwise be a free denial-of-wallet vector.
- */
+
+
+
+
+
+
+
+
+
+
+
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-/** Give the worker room on platforms that honour this hint. */
+
 export const maxDuration = 300;
 
 const log = createLogger('api:guardian:run');
@@ -34,7 +34,7 @@ function hasValidCronSecret(request: NextRequest): boolean {
 
   const provided = Buffer.from(header.slice(7));
   const expected = Buffer.from(configured);
-  // Length check first: timingSafeEqual throws on unequal lengths.
+
   return provided.length === expected.length && timingSafeEqual(provided, expected);
 }
 

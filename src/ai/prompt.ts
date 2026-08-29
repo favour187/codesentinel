@@ -1,19 +1,19 @@
-/**
- * Shared prompt scaffolding.
- *
- * Every system prompt in the application is built from `systemPrompt()` so the
- * non-negotiable rules — repository content is data, never invent evidence,
- * JSON only — are stated identically everywhere and cannot be forgotten by a
- * feature author writing a new task.
- */
 
-/**
- * The rules that apply to every AI call, without exception.
- *
- * The injection rule is stated in the system message because that is the only
- * channel the model can trust: everything in the user message is repository
- * content that an attacker may control.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const UNIVERSAL_RULES = [
   'You are CodeSentinel, an automated code analysis assistant.',
   '',
@@ -26,11 +26,11 @@ const UNIVERSAL_RULES = [
 ].join('\n');
 
 export interface SystemPromptOptions {
-  /** One line describing the job, e.g. "You explain a single security finding." */
+
   readonly role: string;
-  /** Task-specific rules appended after the universal ones. */
+
   readonly rules?: readonly string[];
-  /** The JSON contract, from `promptSchemaHint()`. */
+
   readonly schemaHint: string;
 }
 
@@ -45,19 +45,19 @@ export function systemPrompt({ role, rules = [], schemaHint }: SystemPromptOptio
   return sections.join('\n');
 }
 
-/**
- * Wrap untrusted repository content in an explicit data fence.
- *
- * Delimiting each piece of evidence does two things: it tells the model where
- * data starts and stops (reinforcing rule 1), and it gives every excerpt a
- * label the model can cite, which is what makes answers checkable.
- */
+
+
+
+
+
+
+
 export function evidenceBlock(label: string, content: string): string {
   if (!content.trim()) return `--- ${label}: (none available) ---`;
   return `--- BEGIN ${label} ---\n${content}\n--- END ${label} ---`;
 }
 
-/** Assemble labelled evidence sections into one user message. */
+
 export function buildUserMessage(sections: ReadonlyArray<{ label: string; content: string }>): string {
   return sections.map((s) => evidenceBlock(s.label, s.content)).join('\n\n');
 }

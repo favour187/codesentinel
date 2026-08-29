@@ -15,12 +15,12 @@ import { checkoutRepository } from '@/guardian/checkout';
 import { createLogger } from '@/lib/logger';
 import { rateLimit } from '@/lib/rate-limit';
 
-/**
- * Manually trigger a scan and wait for it.
- *
- * Demo uses the bundled fixture. GitHub uses the signed-in user's OAuth token
- * to download a tarball — no GitHub App and no background worker required.
- */
+
+
+
+
+
+
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

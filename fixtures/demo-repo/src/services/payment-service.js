@@ -1,11 +1,11 @@
-// DEMO FIXTURE — critical business logic deliberately shipped WITHOUT tests.
-// Planted: test gap on high-risk code, floating-point money math, no error handling
+
+
 
 const axios = require('axios');
 const { STRIPE_KEY } = require('../lib/config');
 
 async function chargeCustomer(customerId, amountUsd) {
-  // Floating-point arithmetic on currency
+
   const amountCents = amountUsd * 100;
 
   const response = await axios.post(
@@ -17,7 +17,7 @@ async function chargeCustomer(customerId, amountUsd) {
 }
 
 function applyDiscount(total, percent) {
-  // No bounds checking: percent > 100 produces a negative total
+
   return total - total * (percent / 100);
 }
 
@@ -30,7 +30,7 @@ function calculateRefund(order) {
 }
 
 function formatAmount(amountUsd) {
-  // Floating-point money formatting: rounds inconsistently on .005 boundaries
+
   return '$' + (Math.round(amountUsd * 100) / 100).toFixed(2);
 }
 

@@ -4,14 +4,14 @@ import { dependencies, files, findings, tests } from '@/db/schema';
 import type { Severity } from '@/db/schema';
 import { latestScanId } from '@/ai/context';
 
-/**
- * Technical debt estimate.
- *
- * Deterministic metrics first: every hour in the total traces back to a
- * counted thing (a finding, a stale dependency, an untested file). The number
- * is an *estimate* and is labelled as one everywhere it is shown — the value
- * is in the relative ranking of contributors, not in the absolute hours.
- */
+
+
+
+
+
+
+
+
 
 export interface DebtContributor {
   readonly id: string;
@@ -36,7 +36,7 @@ export interface TechnicalDebt {
   };
 }
 
-/** Remediation effort per finding severity. Mirrors scanner/scoring.ts. */
+
 const FINDING_HOURS: Record<Severity, number> = {
   critical: 4,
   high: 2,
@@ -45,7 +45,7 @@ const FINDING_HOURS: Record<Severity, number> = {
   info: 0.15,
 };
 
-/** A file above this complexity is treated as needing refactoring effort. */
+
 const COMPLEXITY_THRESHOLD = 25;
 const HOURS_PER_COMPLEX_FILE = 1.5;
 const HOURS_PER_UNTESTED_FILE = 0.75;
@@ -86,7 +86,7 @@ export async function computeTechnicalDebt(repositoryId: string): Promise<Techni
 
   const contributors: DebtContributor[] = [];
 
-  /* 1. Open findings — the largest and best-evidenced component. */
+
   const findingHours = findingRows.reduce((sum, f) => sum + FINDING_HOURS[f.severity], 0);
   if (findingRows.length > 0) {
     const bySeverity = new Map<Severity, number>();
@@ -103,7 +103,7 @@ export async function computeTechnicalDebt(repositoryId: string): Promise<Techni
     });
   }
 
-  /* 2. Complexity. */
+
   const complexFiles = fileRows.filter((f) => (f.complexity ?? 0) >= COMPLEXITY_THRESHOLD);
   if (complexFiles.length > 0) {
     contributors.push({
@@ -118,8 +118,8 @@ export async function computeTechnicalDebt(repositoryId: string): Promise<Techni
     });
   }
 
-  /* 3. Test gaps. Only source files count — configs and generated files
-   *    would inflate this into meaninglessness. */
+
+
   const coveredPaths = new Set(testRows.flatMap((t) => t.coversPaths));
   const testFilePaths = new Set(testRows.map((t) => t.filePath));
   const sourceFiles = fileRows.filter(
@@ -136,7 +136,7 @@ export async function computeTechnicalDebt(repositoryId: string): Promise<Techni
     });
   }
 
-  /* 4. Dependencies. */
+
   const vulnerable = depRows.filter((d) => d.vulnerabilities.length > 0);
   if (vulnerable.length > 0) {
     contributors.push({
@@ -164,8 +164,8 @@ export async function computeTechnicalDebt(repositoryId: string): Promise<Techni
     });
   }
 
-  /* 5. Recurring findings: the same rule firing across many files is a
-   *    systemic issue, and fixing it one file at a time is how debt sticks. */
+
+
   const byRule = new Map<string, number>();
   for (const f of findingRows) byRule.set(f.ruleId, (byRule.get(f.ruleId) ?? 0) + 1);
   const recurring = [...byRule.entries()].filter(([, n]) => n >= 3);
@@ -189,7 +189,7 @@ export async function computeTechnicalDebt(repositoryId: string): Promise<Techni
   };
 }
 
-/** True when `current` is at least one major version behind `latest`. */
+
 export function isMajorBehind(current: string, latest: string): boolean {
   const major = (v: string) => Number.parseInt(v.replace(/^[^\d]*/, '').split('.')[0] ?? '', 10);
   const a = major(current);
@@ -198,7 +198,7 @@ export function isMajorBehind(current: string, latest: string): boolean {
   return b > a;
 }
 
-/** Count of TODO/FIXME markers recorded by the quality scanner. */
+
 export async function countDebtMarkers(repositoryId: string): Promise<number> {
   const db = await getDb();
   const rows = await db

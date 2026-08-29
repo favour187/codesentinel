@@ -2,21 +2,21 @@ import { createFinding } from '../finding';
 import type { Finding, ParsedDependency, ScanContext, Scanner, SourceFile } from '../types';
 import type { Severity } from '@/db/schema';
 
-/**
- * Dependency scanner.
- *
- * Parses manifests (package.json, requirements.txt, pyproject.toml) and asks
- * the configured VulnerabilityProvider about each package. Manifest parsing and
- * vulnerability lookup are separate concerns: the parsers are pure and fully
- * testable, and the provider is swappable (offline dataset vs OSV.dev).
- */
+
+
+
+
+
+
+
+
 
 const SCANNER_ID = 'dependencies';
 
-/** Extracts a concrete version from a spec where one is determinable. */
+
 export function concreteVersion(spec: string): string | null {
   const trimmed = spec.trim();
-  // Ranges and wildcards have no single resolved version without a lockfile.
+
   if (!trimmed || trimmed === '*' || trimmed === 'latest' || trimmed.startsWith('workspace:')) return null;
   if (/^(?:git|github|file|link|npm):/i.test(trimmed) || trimmed.includes('://')) return null;
   const match = /(\d+\.\d+(?:\.\d+)?(?:[-+][\w.]+)?)/.exec(trimmed);
@@ -28,7 +28,7 @@ export function parsePackageJson(file: SourceFile): ParsedDependency[] {
   try {
     parsed = JSON.parse(file.content);
   } catch {
-    return []; // malformed manifest — the quality scanner reports it separately
+    return [];
   }
   if (typeof parsed !== 'object' || parsed === null) return [];
 
@@ -67,7 +67,7 @@ export function parseRequirementsTxt(file: SourceFile): ParsedDependency[] {
 
   file.lines.forEach((rawLine, index) => {
     const line = rawLine.split('#')[0]?.trim() ?? '';
-    if (!line || line.startsWith('-')) return; // flags like -r, -e, --index-url
+    if (!line || line.startsWith('-')) return;
 
     const match = /^([A-Za-z0-9._-]+)\s*(\[[^\]]*\])?\s*(.*)$/.exec(line);
     const name = match?.[1];
@@ -78,7 +78,7 @@ export function parseRequirementsTxt(file: SourceFile): ParsedDependency[] {
       ecosystem: 'PyPI',
       name,
       versionSpec: spec || '*',
-      // Only pinned (==) requirements have a definite installed version.
+
       version: spec.startsWith('==') ? concreteVersion(spec) : null,
       isDev: /dev|test/i.test(file.path),
       isDirect: true,
@@ -104,7 +104,7 @@ export function parsePyprojectToml(file: SourceFile): ParsedDependency[] {
       return;
     }
 
-    // PEP 621: dependencies = ["requests>=2.28", ...]
+
     if (section === 'project' || section.endsWith('dependencies')) {
       const inline = /["']([A-Za-z0-9._-]+)\s*([<>=!~^][^"']*)?["']/.exec(line);
       if (inline?.[1] && !line.startsWith('[')) {
@@ -123,7 +123,7 @@ export function parsePyprojectToml(file: SourceFile): ParsedDependency[] {
       }
     }
 
-    // Poetry: requests = "^2.28.0"
+
     if (section.includes('poetry.dependencies') || section.includes('poetry.group')) {
       const poetry = /^([A-Za-z0-9._-]+)\s*=\s*["']([^"']+)["']/.exec(line);
       if (poetry?.[1] && poetry[1].toLowerCase() !== 'python') {
@@ -158,7 +158,7 @@ export function parseManifests(files: readonly SourceFile[]): ParsedDependency[]
   return dependencies;
 }
 
-/** Highest severity across a set of advisories. */
+
 function worstSeverity(severities: readonly Severity[]): Severity {
   const order: Severity[] = ['critical', 'high', 'medium', 'low', 'info'];
   for (const severity of order) {

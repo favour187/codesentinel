@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 const log = createLogger('api:auth:github');
 
-/** Kick off the GitHub OAuth web flow. */
+
 export function GET(request: NextRequest): NextResponse {
   if (!isOAuthConfigured()) {
     return redirectTo(request, '/login?error=oauth_not_configured');
@@ -22,7 +22,7 @@ export function GET(request: NextRequest): NextResponse {
   try {
     const { url, state } = buildAuthorizeUrl(safeRedirect, resolveOrigin(request));
     const response = NextResponse.redirect(url);
-    // Short-lived, httpOnly state cookie -> CSRF protection on callback.
+
     response.cookies.set(OAUTH_STATE_COOKIE, state, { ...sessionCookieOptions(600), sameSite: 'lax' });
     return response;
   } catch (err) {

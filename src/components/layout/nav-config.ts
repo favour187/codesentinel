@@ -18,11 +18,11 @@ export interface NavItem {
   description: string;
 }
 
-/**
- * The complete top-level navigation — exactly nine destinations, no more.
- * Detail views are contextual side panels / modals inside these sections
- * rather than new top-level pages.
- */
+
+
+
+
+
 export const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Overview', href: '/', icon: LayoutDashboard, description: 'Repository health at a glance' },
   { label: 'Analysis', href: '/analysis', icon: ShieldAlert, description: 'All findings by category' },

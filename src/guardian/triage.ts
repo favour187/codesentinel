@@ -1,9 +1,9 @@
 import type { Category, Severity } from '@/db/schema';
 
-/**
- * Groups related findings so the UI can show one story instead of a pile.
- * Individual findings stay addressable.
- */
+
+
+
+
 
 export interface TriageFinding {
   readonly id: string;

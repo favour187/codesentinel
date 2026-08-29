@@ -1,7 +1,7 @@
-/**
- * Fix verification is honest: RESOLVED is only returned when the original
- * fingerprint is absent from the after-scan findings.
- */
+
+
+
+
 
 export type VerificationStatus = 'resolved' | 'still_present' | 'new_findings' | 'not_run';
 

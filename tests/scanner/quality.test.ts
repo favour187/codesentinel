@@ -5,8 +5,8 @@ import { ruleIds, scanSource } from './helpers/source';
 
 describe('maxNestingDepth', () => {
   it('counts control-flow blocks only, not function or object braces', () => {
-    // A top-level function holding one `if` is depth 1. Counting every brace
-    // would call it 2 and contradict the "nests N levels" wording.
+
+
     expect(maxNestingDepth('function a() {\n  if (x) {\n    y();\n  }\n}'.split('\n')).depth).toBe(1);
     expect(maxNestingDepth('const o = { a: { b: { c: 1 } } };'.split('\n')).depth).toBe(0);
     expect(maxNestingDepth('class A {\n  m() {\n    return 1;\n  }\n}'.split('\n')).depth).toBe(0);

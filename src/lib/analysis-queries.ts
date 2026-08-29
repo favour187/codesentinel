@@ -2,11 +2,11 @@ import { desc, eq, and, sql } from 'drizzle-orm';
 import { db, scans, findings, healthSnapshots } from '@/db';
 import type { Severity, Category, ScanStatus } from '@/db/schema';
 
-/**
- * Read-side queries shared by the dashboard pages.
- * Kept separate from the scanning engine so UI code never imports scanner
- * internals (and cannot accidentally trigger a scan during render).
- */
+
+
+
+
+
 
 export interface HealthSnapshotView {
   id: string;
@@ -127,16 +127,16 @@ export interface FindingView {
   createdAt: Date;
 }
 
-/** Open findings for a repository, most severe first. */
-/**
- * Severity ranking expressed in SQL.
- *
- * This must be applied by the database, not by sorting the result in JS. The
- * query is limited, so sorting after the fact only reorders whichever page was
- * fetched: a critical finding older than `limit` newer low-severity findings
- * would be dropped before the sort ever saw it, and would vanish from the
- * dashboard entirely.
- */
+
+
+
+
+
+
+
+
+
+
 const SEVERITY_RANK_SQL = sql`
   case ${findings.severity}
     when 'critical' then 0
@@ -147,14 +147,14 @@ const SEVERITY_RANK_SQL = sql`
   end
 `;
 
-/**
- * Findings currently live for a repository.
- *
- * Only `open` counts: `superseded` rows are the previous scan's copy of a
- * still-present issue, and `resolved` / `ignored` / `false_positive` are
- * retired. After a few scans the table is mostly history, so this filter is
- * what keeps the dashboard showing the present rather than the archive.
- */
+
+
+
+
+
+
+
+
 export async function getOpenFindings(repositoryId: string, limit = 100): Promise<FindingView[]> {
   const database = await db();
   const rows = await database

@@ -10,13 +10,13 @@ interface PhasePlaceholderProps {
   capabilities: string[];
 }
 
-/**
- * Honest "not built yet" surface for sections scheduled in a later phase.
- *
- * This is intentionally NOT fake data: it states plainly what the section will
- * contain and which build phase delivers it, so nobody mistakes a placeholder
- * for a working scanner result.
- */
+
+
+
+
+
+
+
 export function PhasePlaceholder({ icon: Icon, title, phase, description, capabilities }: PhasePlaceholderProps) {
   return (
     <Card className="border-dashed">

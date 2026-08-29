@@ -9,12 +9,12 @@ import {
   SEVERITY_ORDER,
 } from '@/lib/analysis-queries';
 
-/**
- * The read-side queries are what the dashboard renders. They run against the
- * process-wide `db()` handle, so each test installs a fresh PGlite database
- * into that cache. PGlite is real PostgreSQL, so ordering, JSONB and the
- * status filter behave exactly as they will in production.
- */
+
+
+
+
+
+
 
 type DbGlobal = {
   __codesentinel_db?: unknown;
@@ -40,8 +40,8 @@ beforeEach(async () => {
 
   g.__codesentinel_db = database;
   g.__codesentinel_db_kind = 'pglite';
-  // The bootstrap DDL already ran inside createTestDb; mark the schema ready so
-  // db() does not try to re-bootstrap through a different handle.
+
+
   g.__codesentinel_db_ready = Promise.resolve();
 });
 
@@ -101,8 +101,8 @@ describe('getOpenFindings', () => {
   });
 
   it('excludes superseded rows even when they far outnumber the open ones', async () => {
-    // This is the realistic shape after several scans: persistence retires the
-    // previous scan's rows as `superseded`, so the table is mostly history.
+
+
     const oldScan = await createScan();
     for (let i = 0; i < 40; i += 1) {
       await insertFinding(oldScan.id, { status: 'superseded', title: `old-${i}` });
@@ -163,9 +163,9 @@ describe('getOpenFindings', () => {
   });
 
   it('keeps the most severe findings when more exist than the limit', async () => {
-    // Severity ordering must be applied by the database, not only to the page
-    // that happened to be fetched. Otherwise a critical finding that is older
-    // than `limit` newer findings silently disappears from the dashboard.
+
+
+
     const scan = await createScan();
     await insertFinding(scan.id, { severity: 'critical', title: 'oldest-critical' });
     for (let i = 0; i < 20; i += 1) {

@@ -14,10 +14,10 @@ const LINKS = [
   { href: '/insights', label: 'Insights' },
 ] as const;
 
-/**
- * Optional judge strip. Enabled with ?judge=1 (remembered in sessionStorage).
- * Only navigation — no fabricated scores.
- */
+
+
+
+
 export function JudgeBar({ isDemo }: { isDemo?: boolean }) {
   const pathname = usePathname();
   const search = useSearchParams();

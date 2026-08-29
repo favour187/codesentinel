@@ -17,18 +17,18 @@ import {
 import { buildUserMessage, systemPrompt } from '../prompt';
 import { getFileHistory, getMemory, getRepositoryContext, latestScanId, renderMemory } from '../context';
 
-/**
- * Items 8, 9, 11 and 13: AI narration over deterministic analysis.
- *
- * Each of these has the same shape — a deterministic engine computes the
- * answer, and the AI turns it into prose. The engine output is passed to the
- * caller alongside the narration so the UI can show the hard numbers even when
- * AI is unavailable, which is the whole point of the split.
- */
 
-/* -------------------------------------------------------------------------- */
-/* Item 8: architecture explanation                                           */
-/* -------------------------------------------------------------------------- */
+
+
+
+
+
+
+
+
+
+
+
 
 export interface ArchitectureLayer {
   readonly name: string;
@@ -36,7 +36,7 @@ export interface ArchitectureLayer {
   readonly fileCount: number;
 }
 
-/** Classify files into layers by path and role. Deterministic. */
+
 export async function detectArchitecture(repositoryId: string): Promise<{
   layers: ArchitectureLayer[];
   entryPoints: string[];
@@ -49,12 +49,12 @@ export async function detectArchitecture(repositoryId: string): Promise<{
 
   const rows = await db.select({ path: files.path, kind: files.kind }).from(files).where(eq(files.scanId, scanId));
 
-  /*
-   * Layer classification lives in the Digital Twin so the architecture map and
-   * this explanation cannot drift into two different vocabularies. `kind` still
-   * refines the result: the scanner already decided a file is a route or a
-   * component, and that beats a path regex.
-   */
+
+
+
+
+
+
   const layerFor = (p: string, kind: string | null): Layer | null => {
     if (kind === 'test') return 'Tests';
     if (kind === 'route') return 'API';
@@ -182,9 +182,9 @@ export async function explainArchitecture(
   return { ...result, detected };
 }
 
-/* -------------------------------------------------------------------------- */
-/* Item 9: blast radius narration                                             */
-/* -------------------------------------------------------------------------- */
+
+
+
 
 const BLAST_HINT = promptSchemaHint({
   summary: 'string — what changing this file would affect, in plain language',
@@ -254,9 +254,9 @@ export async function explainBlastRadius(
   return { ...result, radius };
 }
 
-/* -------------------------------------------------------------------------- */
-/* Item 11: code archaeologist                                                */
-/* -------------------------------------------------------------------------- */
+
+
+
 
 const ARCHAEOLOGY_HINT = promptSchemaHint({
   summary: 'string — why this code exists and how it evolved, based on the commit history',
@@ -331,9 +331,9 @@ export async function explainCodeHistory(
   return { ...result, commits };
 }
 
-/* -------------------------------------------------------------------------- */
-/* Item 13: technical debt narration                                          */
-/* -------------------------------------------------------------------------- */
+
+
+
 
 const DEBT_HINT = promptSchemaHint({
   summary: 'string — what the debt in this repository actually consists of, in 3-5 sentences',

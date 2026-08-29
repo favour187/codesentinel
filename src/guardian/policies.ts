@@ -1,12 +1,12 @@
 import type { PolicyAction, PolicyTrigger, Severity } from '@/db/schema';
 
-/**
- * WHEN / IF / THEN evaluator.
- *
- * A rule fires only when every specified condition matches. Missing fields
- * mean "any". Actions never apply code — they only describe what Guardian
- * should request or report.
- */
+
+
+
+
+
+
+
 
 export interface PolicyRuleView {
   readonly id?: string;

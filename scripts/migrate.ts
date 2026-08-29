@@ -1,11 +1,11 @@
-/**
- * Applies the schema to the configured database.
- *
- *  - PostgreSQL (DATABASE_URL set): runs versioned drizzle-kit migrations from ./drizzle
- *  - PGlite (local dev):            applies the idempotent bootstrap DDL
- *
- * Usage: npm run db:migrate
- */
+
+
+
+
+
+
+
+
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { getDb, getDbKind } from '../src/db/index';

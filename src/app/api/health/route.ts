@@ -8,10 +8,10 @@ export const dynamic = 'force-dynamic';
 
 const log = createLogger('api:health');
 
-/**
- * Liveness/readiness probe. Verifies the database actually answers a query —
- * used by Docker healthchecks and deployment smoke tests.
- */
+
+
+
+
 export async function GET(): Promise<NextResponse> {
   const started = Date.now();
   try {

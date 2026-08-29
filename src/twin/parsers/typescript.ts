@@ -10,35 +10,35 @@ import {
   type ParsedSymbol,
 } from './types';
 
-/**
- * TypeScript / JavaScript parser.
- *
- * Uses the TypeScript compiler's own parser, which is already a dependency of
- * the project and is the only realistic way to get correct results for modern
- * syntax (decorators, generics, JSX, optional chaining). Crucially it is a
- * *parser*, not an evaluator: `createSourceFile` builds an AST from text and
- * executes nothing, which is exactly what analysing untrusted repository code
- * requires.
- *
- * Type checking is deliberately NOT used. A full type-checked program needs
- * every dependency installed and resolvable, which is false for most cloned
- * repositories and would make indexing cost minutes instead of milliseconds.
- * Everything below is derived from syntax alone.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'all', 'use']);
 
-/** Router-ish receivers: app.get(...), router.post(...), api.use(...). */
+
 const ROUTER_RECEIVERS = /^(app|router|server|api|r)$/i;
 
 const SQL_STATEMENT =
   /\b(select\s+[\s\S]{0,200}?\bfrom\b|insert\s+into\b|update\s+[a-z_][\w".]*\s+set\b|delete\s+from\b|create\s+table\b|drop\s+table\b)/i;
 
-/** ORM/query-builder surfaces worth recording as a database touch. */
-/*
- * Members distinctive enough to imply a database on their own — no other
- * common API uses these names.
- */
+
+
+
+
+
 const ORM_MEMBERS_DISTINCTIVE = new Set([
   'findone',
   'findmany',
@@ -49,12 +49,12 @@ const ORM_MEMBERS_DISTINCTIVE = new Set([
   'createquerybuilder',
 ]);
 
-/*
- * Members that are only a database touch when the receiver is itself a
- * database handle. `update` in particular is shared with plenty of unrelated
- * APIs — `crypto.createHash('md5').update(x)` is a hash, not a write, and
- * recording it as one would be an invented relationship.
- */
+
+
+
+
+
+
 const ORM_MEMBERS_AMBIGUOUS = new Set([
   'query',
   'execute',
@@ -65,10 +65,10 @@ const ORM_MEMBERS_AMBIGUOUS = new Set([
   'transaction',
 ]);
 
-/**
- * Identifier names that conventionally hold a database handle. Used only to
- * qualify the ambiguous members above, never to create an edge by itself.
- */
+
+
+
+
 const DB_RECEIVER_NAME =
   /^(db|database|prisma|knex|sequelize|mongoose|conn|connection|pool|client|datasource|orm|em|entitymanager|queryrunner|repo|repository|trx|tx|session|store|collection|model|table|sql)$/i;
 
@@ -79,7 +79,7 @@ function lineOf(sf: ts.SourceFile, pos: number): number {
   return sf.getLineAndCharacterOfPosition(pos).line + 1;
 }
 
-/** Branch-like nodes, matching the complexity proxy used elsewhere. */
+
 function complexityOf(node: ts.Node): number {
   let score = 0;
   const visit = (n: ts.Node): void => {
@@ -123,12 +123,12 @@ function hasModifier(node: ts.Node, kind: ts.SyntaxKind): boolean {
 function parameterNames(params: ts.NodeArray<ts.ParameterDeclaration>): string[] {
   return params.map((p, i) => {
     if (ts.isIdentifier(p.name)) return p.name.text;
-    // Destructured parameters have no single name; record their shape position.
+
     return `arg${i}`;
   });
 }
 
-/** Declaration text with the body stripped — enough to write a call against. */
+
 function signatureOf(sf: ts.SourceFile, node: ts.Node, body?: ts.Node): string {
   const full = node.getText(sf);
   if (!body) return full.slice(0, 300).trim();
@@ -144,17 +144,17 @@ function stringLiteralOf(node: ts.Node | undefined): string | null {
 
 class TypeScriptParser implements LanguageParser {
   readonly id = 'typescript';
-  /** Language ids as produced by scanner/discovery's detectLanguage. */
+
   readonly languages = ['typescript', 'javascript'] as const;
 
   parse(path: string, content: string): ParsedFile {
     try {
       return this.parseUnsafe(path, content);
     } catch (err) {
-      /*
-       * A parser crash must degrade to "no detail for this file", never take
-       * down an index run. Malformed or hostile source is expected input.
-       */
+
+
+
+
       return emptyParsedFile(path, 'typescript', err instanceof Error ? err.message : String(err));
     }
   }
@@ -165,7 +165,7 @@ class TypeScriptParser implements LanguageParser {
       path,
       content,
       { languageVersion: ts.ScriptTarget.Latest, jsDocParsingMode: ts.JSDocParsingMode.ParseNone },
-      /* setParentNodes */ true,
+       true,
       jsx ? ts.ScriptKind.TSX : /\.(js|mjs|cjs)$/.test(path) ? ts.ScriptKind.JS : ts.ScriptKind.TS,
     );
 
@@ -176,7 +176,7 @@ class TypeScriptParser implements LanguageParser {
     const databaseUses: ParsedDatabaseUse[] = [];
     const calls: ParsedCall[] = [];
 
-    /** Innermost named declaration, so a call can be attributed to a symbol. */
+
     const symbolStack: string[] = [];
 
     const pushSymbol = (s: ParsedSymbol): void => {
@@ -184,7 +184,7 @@ class TypeScriptParser implements LanguageParser {
     };
 
     const visit = (node: ts.Node): void => {
-      /* ---------------- imports ---------------- */
+
       if (ts.isImportDeclaration(node)) {
         const spec = stringLiteralOf(node.moduleSpecifier);
         if (spec) {
@@ -215,7 +215,7 @@ class TypeScriptParser implements LanguageParser {
         }
       }
 
-      // export ... from './x' also creates an import relationship.
+
       if (ts.isExportDeclaration(node) && node.moduleSpecifier) {
         const spec = stringLiteralOf(node.moduleSpecifier);
         if (spec) {
@@ -228,7 +228,7 @@ class TypeScriptParser implements LanguageParser {
         }
       }
 
-      /* ---------------- require() and dynamic import() ---------------- */
+
       if (ts.isCallExpression(node)) {
         const isRequire = ts.isIdentifier(node.expression) && node.expression.text === 'require';
         const isDynamicImport = node.expression.kind === ts.SyntaxKind.ImportKeyword;
@@ -257,7 +257,7 @@ class TypeScriptParser implements LanguageParser {
         this.collectOrmUse(sf, node, databaseUses);
       }
 
-      /* ---------------- raw SQL in string/template literals ---------------- */
+
       if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isTemplateExpression(node)) {
         const text = ts.isTemplateExpression(node) ? node.getText(sf) : node.text;
         const match = SQL_STATEMENT.exec(text);
@@ -271,7 +271,7 @@ class TypeScriptParser implements LanguageParser {
         }
       }
 
-      /* ---------------- declarations ---------------- */
+
       let pushedScope = false;
 
       if (ts.isFunctionDeclaration(node) && node.name) {
@@ -359,18 +359,18 @@ class TypeScriptParser implements LanguageParser {
         if (hasModifier(node, ts.SyntaxKind.ExportKeyword)) exports.push(node.name.text);
       } else if (ts.isVariableStatement(node)) {
         const exported = hasModifier(node, ts.SyntaxKind.ExportKeyword);
-        /*
-         * Only module-scope declarations are symbols. Locals inside a function
-         * body are implementation detail: nothing can import them, nothing can
-         * call them from another file, and recording them would bury the real
-         * declarations under noise in the graph and the UI.
-         */
+
+
+
+
+
+
         const moduleScope = node.parent === sf;
         for (const decl of node.declarationList.declarations) {
           if (!moduleScope) continue;
           if (!ts.isIdentifier(decl.name)) continue;
           const init = decl.initializer;
-          // `const x = require('y')` is an import binding, not a declaration.
+
           if (init && ts.isCallExpression(init) && ts.isIdentifier(init.expression) && init.expression.text === 'require') {
             continue;
           }
@@ -391,7 +391,7 @@ class TypeScriptParser implements LanguageParser {
         }
       }
 
-      /* ---------------- CommonJS exports ---------------- */
+
       if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
         const left = node.left.getText(sf);
         const cjs = /^(?:module\.exports|exports)\.(\w+)$/.exec(left);
@@ -404,7 +404,7 @@ class TypeScriptParser implements LanguageParser {
         }
       }
 
-      /* ---------------- export { a, b } ---------------- */
+
       if (ts.isExportDeclaration(node) && node.exportClause && ts.isNamedExports(node.exportClause)) {
         for (const el of node.exportClause.elements) exports.push(el.name.text);
       }
@@ -415,16 +415,16 @@ class TypeScriptParser implements LanguageParser {
 
     ts.forEachChild(sf, visit);
 
-    /*
-     * Back-fill `isExported` from the export list.
-     *
-     * ESM marks the declaration itself (`export function foo`), so the flag is
-     * set as the symbol is created. CommonJS does not: `function foo() {}` is
-     * an ordinary declaration and `module.exports = { foo }` at the bottom of
-     * the file is what exports it. Without this pass every symbol in a CJS
-     * codebase reads as private, which silently empties the test-gap engine
-     * and the public-API surface for any repository not yet on ESM.
-     */
+
+
+
+
+
+
+
+
+
+
     const exportedNames = new Set(exports);
     const resolvedSymbols =
       exportedNames.size === 0
@@ -445,7 +445,7 @@ class TypeScriptParser implements LanguageParser {
     };
   }
 
-  /** Bindings from `const { a, b } = require('x')` / `const x = require('x')`. */
+
   private requireBindings(call: ts.CallExpression): string[] {
     const decl = call.parent;
     if (!decl || !ts.isVariableDeclaration(decl)) return [];
@@ -466,7 +466,7 @@ class TypeScriptParser implements LanguageParser {
   ): void {
     const enclosing = stack.length > 0 ? (stack[stack.length - 1] ?? null) : null;
     if (ts.isIdentifier(node.expression)) {
-      // Module loading is an import edge, already recorded as one.
+
       if (node.expression.text === 'require') return;
       out.push({
         callee: node.expression.text,
@@ -485,7 +485,7 @@ class TypeScriptParser implements LanguageParser {
     }
   }
 
-  /** app.get('/path', handler) and friends. */
+
   private collectRoute(sf: ts.SourceFile, node: ts.CallExpression, out: ParsedRoute[]): void {
     if (!ts.isPropertyAccessExpression(node.expression)) return;
     const method = node.expression.name.text.toLowerCase();
@@ -497,7 +497,7 @@ class TypeScriptParser implements LanguageParser {
 
     const first = stringLiteralOf(node.arguments[0]);
     if (first === null || !first.startsWith('/')) return;
-    // `use` without a handler is middleware mounting, still a real API surface.
+
     out.push({
       method: method === 'all' || method === 'use' ? 'ANY' : method.toUpperCase(),
       path: first,
@@ -513,19 +513,19 @@ class TypeScriptParser implements LanguageParser {
 
     if (!ORM_MEMBERS_DISTINCTIVE.has(member)) {
       if (!ORM_MEMBERS_AMBIGUOUS.has(member)) return;
-      /*
-       * Ambiguous member: only a database touch if the receiver looks like a
-       * database handle. The receiver is the last identifier in the chain, so
-       * `db.users.update()` qualifies on `users`… which is too loose, hence we
-       * test the root of the chain as well and accept either.
-       */
+
+
+
+
+
+
       const parts = receiverText.split(/[.[\]()]/).filter(Boolean);
       const root = parts[0] ?? '';
       const last = parts[parts.length - 1] ?? '';
       if (!DB_RECEIVER_NAME.test(root) && !DB_RECEIVER_NAME.test(last)) return;
     }
 
-    // `db.query(...)`, `prisma.user.findMany()`, `repo.findOne()`.
+
     out.push({
       target: this.receiverTarget(receiverText),
       via: 'orm',
@@ -534,7 +534,7 @@ class TypeScriptParser implements LanguageParser {
     });
   }
 
-  /** `prisma.user` → "user"; `db` → null (no identifiable table). */
+
   private receiverTarget(receiver: string): string | null {
     const parts = receiver.split('.');
     if (parts.length < 2) return null;

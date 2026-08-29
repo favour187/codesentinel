@@ -4,25 +4,25 @@ import { getDb } from '@/db';
 import { codeEdges, symbols as symbolsTable } from '@/db/schema';
 import type { EdgeConfidence, EdgeType, SymbolKind } from '@/db/schema';
 
-/**
- * Read side of the Digital Twin graph.
- *
- * `indexer.ts` writes edges; this module answers questions about them. It is
- * deliberately the only place that knows how endpoint keys are shaped, so
- * every consumer — blast radius, change impact, the architecture map, search —
- * traverses the same graph with the same rules rather than re-deriving
- * relationships from `files.imports` in six slightly different ways.
- *
- * Three rules hold throughout:
- *
- * 1. Nothing is invented. Every returned relationship corresponds to a stored
- *    edge with stored evidence. A file with no edges returns no edges.
- * 2. Endpoint keys are opaque strings, decoded only by the helpers here.
- * 3. Traversal is bounded. A hub file must not pull the whole repository into
- *    an "impact" list nobody can act on.
- */
 
-/** An edge as consumers see it, with its stored justification attached. */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export interface GraphEdge {
   readonly type: EdgeType;
   readonly fromKey: string;
@@ -46,11 +46,11 @@ export interface GraphSymbol {
   readonly parameters: readonly string[];
 }
 
-/* -------------------------------------------------------------------------- */
-/* Endpoint keys                                                              */
-/* -------------------------------------------------------------------------- */
 
-/** True for `path#symbolName` endpoints. */
+
+
+
+
 export function isSymbolKey(key: string): boolean {
   return key.includes('#');
 }
@@ -67,30 +67,30 @@ export function isDatabaseKey(key: string): boolean {
   return key.startsWith('db:');
 }
 
-/** True when a key addresses a file in the repository (not a package/route/table). */
+
 export function isFileKey(key: string): boolean {
   return !isPackageKey(key) && !isRouteKey(key) && !isDatabaseKey(key);
 }
 
-/**
- * The file an endpoint belongs to, or null for external endpoints.
- *
- * `src/a.ts#login` -> `src/a.ts`; `src/a.ts` -> `src/a.ts`; `pkg:express` -> null.
- */
+
+
+
+
+
 export function fileOfKey(key: string): string | null {
   if (!isFileKey(key)) return null;
   const hash = key.indexOf('#');
   return hash === -1 ? key : key.slice(0, hash);
 }
 
-/** The symbol name in a symbol key, else null. */
+
 export function symbolNameOfKey(key: string): string | null {
   if (!isFileKey(key)) return null;
   const hash = key.indexOf('#');
   return hash === -1 ? null : key.slice(hash + 1);
 }
 
-/** `api:GET /users/:id` -> `{ method: 'GET', path: '/users/:id' }`. */
+
 export function parseRouteKey(key: string): { method: string; path: string } | null {
   if (!isRouteKey(key)) return null;
   const rest = key.slice('api:'.length);
@@ -99,7 +99,7 @@ export function parseRouteKey(key: string): { method: string; path: string } | n
   return { method: rest.slice(0, space), path: rest.slice(space + 1) };
 }
 
-/** `pkg:express` -> `express`; `db:users` -> `users`. */
+
 export function labelOfKey(key: string): string {
   if (isPackageKey(key)) return key.slice('pkg:'.length);
   if (isDatabaseKey(key)) return key.slice('db:'.length);
@@ -110,17 +110,17 @@ export function labelOfKey(key: string): string {
   return key;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Loading                                                                    */
-/* -------------------------------------------------------------------------- */
 
-/**
- * Every edge for a repository, optionally filtered by type.
- *
- * Loaded whole rather than queried per hop: a traversal does many small
- * lookups, and one round trip plus an in-memory index beats N queries against
- * a graph that comfortably fits in memory for any repository we can index.
- */
+
+
+
+
+
+
+
+
+
+
 export async function loadEdges(repositoryId: string, types?: readonly EdgeType[]): Promise<GraphEdge[]> {
   const db = await getDb();
   const rows = await db
@@ -142,7 +142,7 @@ export async function loadEdges(repositoryId: string, types?: readonly EdgeType[
   return rows;
 }
 
-/** How many edges the twin holds for a repository — the "is it indexed?" check. */
+
 export async function edgeCount(repositoryId: string): Promise<number> {
   const db = await getDb();
   const [row] = await db
@@ -178,22 +178,22 @@ export async function loadSymbols(repositoryId: string, filePaths?: readonly str
   }));
 }
 
-/* -------------------------------------------------------------------------- */
-/* Adjacency                                                                  */
-/* -------------------------------------------------------------------------- */
 
-/**
- * An in-memory index over a repository's edges.
- *
- * Built once per request and reused across every traversal in that request.
- * The forward and reverse maps are both file-level: symbol endpoints collapse
- * to their file, because "what breaks if this changes" is answered in files
- * even when the evidence is a specific call.
- */
+
+
+
+
+
+
+
+
+
+
+
 export class TwinGraph {
   private readonly outgoing = new Map<string, GraphEdge[]>();
   private readonly incoming = new Map<string, GraphEdge[]>();
-  /** File-level dependency edges, deduped: importer -> imported. */
+
   private readonly fileImports = new Map<string, Set<string>>();
   private readonly fileImporters = new Map<string, Set<string>>();
 
@@ -202,7 +202,7 @@ export class TwinGraph {
       push(this.outgoing, edge.fromKey, edge);
       push(this.incoming, edge.toKey, edge);
 
-      // `imports` and `calls` both mean "from depends on to" for traversal.
+
       if (edge.type !== 'imports' && edge.type !== 'calls') continue;
       const from = fileOfKey(edge.fromKey);
       const to = fileOfKey(edge.toKey);
@@ -220,7 +220,7 @@ export class TwinGraph {
     return this.edges.length === 0;
   }
 
-  /** Edges leaving a key exactly as stored (symbol keys stay symbol keys). */
+
   edgesFrom(key: string, type?: EdgeType): GraphEdge[] {
     const all = this.outgoing.get(key) ?? [];
     return type ? all.filter((e) => e.type === type) : all;
@@ -231,22 +231,22 @@ export class TwinGraph {
     return type ? all.filter((e) => e.type === type) : all;
   }
 
-  /** Every edge touching a file, including edges on symbols declared in it. */
+
   edgesForFile(filePath: string): GraphEdge[] {
     return this.edges.filter((e) => fileOfKey(e.fromKey) === filePath || fileOfKey(e.toKey) === filePath);
   }
 
-  /** Files this file imports or calls into. */
+
   dependenciesOf(filePath: string): string[] {
     return [...(this.fileImports.get(filePath) ?? [])].sort();
   }
 
-  /** Files that import or call into this file. */
+
   dependentsOf(filePath: string): string[] {
     return [...(this.fileImporters.get(filePath) ?? [])].sort();
   }
 
-  /** Every file that appears as an endpoint of a file-level edge. */
+
   files(): string[] {
     const out = new Set<string>();
     for (const edge of this.edges) {
@@ -258,13 +258,13 @@ export class TwinGraph {
     return [...out].sort();
   }
 
-  /**
-   * Breadth-first walk over reverse dependencies.
-   *
-   * Returns the shortest depth at which each file is reached, which is what
-   * makes "direct" (1) versus "indirect" (2+) meaningful. Bounded by both
-   * depth and node count so a shared utility cannot return the repository.
-   */
+
+
+
+
+
+
+
   reachableDependents(
     origins: readonly string[],
     options: { maxDepth?: number; maxNodes?: number } = {},
@@ -294,7 +294,7 @@ export class TwinGraph {
     return out;
   }
 
-  /** Routes exposed by any of these files, with the evidence that proved it. */
+
   routesOf(filePaths: readonly string[]): Array<{ route: string; filePath: string; evidence: string | null }> {
     const set = new Set(filePaths);
     const out: Array<{ route: string; filePath: string; evidence: string | null }> = [];
@@ -307,7 +307,7 @@ export class TwinGraph {
     return out.sort((a, b) => a.route.localeCompare(b.route));
   }
 
-  /** Database targets touched by any of these files. */
+
   databasesOf(filePaths: readonly string[]): Array<{ target: string; filePath: string; evidence: string | null }> {
     const set = new Set(filePaths);
     const out: Array<{ target: string; filePath: string; evidence: string | null }> = [];
@@ -320,7 +320,7 @@ export class TwinGraph {
     return out.sort((a, b) => a.target.localeCompare(b.target));
   }
 
-  /** External packages any of these files depend on. */
+
   packagesOf(filePaths: readonly string[]): string[] {
     const set = new Set(filePaths);
     const out = new Set<string>();
@@ -332,12 +332,12 @@ export class TwinGraph {
     return [...out].sort();
   }
 
-  /**
-   * Test files covering any of these files, via stored TESTS edges.
-   *
-   * A TESTS edge is written when a test file imports a non-test file, so this
-   * is "a test exercises this module", not a coverage measurement.
-   */
+
+
+
+
+
+
   testsCovering(filePaths: readonly string[]): Array<{ testPath: string; covers: string; evidence: string | null }> {
     const set = new Set(filePaths);
     const out: Array<{ testPath: string; covers: string; evidence: string | null }> = [];
@@ -351,7 +351,7 @@ export class TwinGraph {
     return out.sort((a, b) => a.testPath.localeCompare(b.testPath) || a.covers.localeCompare(b.covers));
   }
 
-  /** Files with a TESTS edge pointing at them. */
+
   testedFiles(): Set<string> {
     const out = new Set<string>();
     for (const edge of this.edges) {
@@ -362,7 +362,7 @@ export class TwinGraph {
     return out;
   }
 
-  /** Callers of a specific symbol, with the call site as evidence. */
+
   callersOfSymbol(symbolKeyValue: string): Array<{ fromKey: string; filePath: string | null; evidence: string | null; line: number | null }> {
     return this.edgesTo(symbolKeyValue, 'calls').map((e) => ({
       fromKey: e.fromKey,

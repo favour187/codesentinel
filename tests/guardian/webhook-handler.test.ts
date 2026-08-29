@@ -108,7 +108,7 @@ describe('handleWebhook — delivery ledger', () => {
 
 describe('handleWebhook — idempotency', () => {
   it('processes a redelivered event exactly once', async () => {
-    // GitHub retries on timeout. A second scan would post a duplicate comment.
+
     const id = nextDelivery();
     const first = await handleWebhook({ deliveryId: id, event: 'push', payload: pushPayload() });
     const second = await handleWebhook({ deliveryId: id, event: 'push', payload: pushPayload() });

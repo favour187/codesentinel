@@ -3,18 +3,18 @@ import path from 'node:path';
 import { createFinding } from '../finding';
 import type { Finding, ScanContext, Scanner, SourceFile } from '../types';
 
-/**
- * Test discovery and test-gap detection.
- *
- * Coverage tooling is the authoritative source, but it requires executing the
- * suite — which CodeSentinel will not do against untrusted code during a scan.
- * Instead this derives an import-graph-based approximation: a source module is
- * "covered" when some test file imports it, directly or through one hop.
- *
- * Findings are prioritised by risk, not raw absence of tests. An untested
- * one-line constants file is noise; an untested payment service is the finding
- * that matters.
- */
+
+
+
+
+
+
+
+
+
+
+
+
 
 const SCANNER_ID = 'testing';
 
@@ -27,14 +27,14 @@ const TEST_FRAMEWORKS: Array<{ name: string; pattern: RegExp }> = [
   { name: 'go test', pattern: /func\s+Test\w+\s*\(\s*t\s+\*testing\.T/ },
 ];
 
-/**
- * Counts test cases regardless of framework.
- *
- * The JS branch allows a modifier (`it.skip`, `test.concurrent`) and an
- * optional intervening argument list, so table-driven cases written as
- * `it.each([...])('name', fn)` are counted. Missing those would understate
- * coverage in exactly the suites that exercise the most input combinations.
- */
+
+
+
+
+
+
+
+
 export function countTestCases(content: string): number {
   const matches = content.match(
     /\b(?:it|test)\s*(?:\.\w+)*\s*(?:\([^()]*\)|`[^`]*`)?\s*\(\s*['"`]|\bdef\s+test_\w+\s*\(|\bfunc\s+Test\w+\s*\(/g,
@@ -53,7 +53,7 @@ export function hasAssertions(content: string): boolean {
   return /\bexpect\s*\(|\bassert\b|\bshould\b|\bt\.(?:Error|Fatal)\b/.test(content);
 }
 
-/** Extracts relative import targets so tests can be linked to their subjects. */
+
 export function extractRelativeImports(file: SourceFile): string[] {
   const targets = new Set<string>();
   const patterns = [
@@ -73,7 +73,7 @@ export function extractRelativeImports(file: SourceFile): string[] {
   return [...targets];
 }
 
-/** Resolves a relative import to an actual repository path. */
+
 export function resolveImport(fromPath: string, specifier: string, known: ReadonlySet<string>): string | null {
   const base = path.posix.join(path.posix.dirname(fromPath), specifier);
   const candidates = [
@@ -89,10 +89,10 @@ export function resolveImport(fromPath: string, specifier: string, known: Readon
   return null;
 }
 
-/** Files that carry real risk if they break. */
+
 const HIGH_RISK_PATTERN = /(?:payment|billing|charge|invoice|auth|login|session|token|password|crypto|permission|access|admin|security|migration|order|checkout|transaction)/i;
 
-/** Files where the absence of a test is not interesting. */
+
 function isTriviallyTestable(file: SourceFile): boolean {
   if (file.loc < 10) return true;
   const base = path.posix.basename(file.path).toLowerCase();
@@ -115,7 +115,7 @@ export const testingScanner: Scanner = {
     const testFiles = ctx.files.filter((f) => f.isTest);
     const sourceFiles = ctx.files.filter((f) => !f.isTest);
 
-    /* ------------------ map each test file to what it covers ----------------- */
+
     const covered = new Set<string>();
     for (const testFile of testFiles) {
       for (const specifier of extractRelativeImports(testFile)) {
@@ -123,7 +123,7 @@ export const testingScanner: Scanner = {
         if (resolved) covered.add(resolved);
       }
 
-      // A test file with no assertions gives false confidence.
+
       if (countTestCases(testFile.content) > 0 && !hasAssertions(testFile.content)) {
         findings.push(
           createFinding({
@@ -146,7 +146,7 @@ export const testingScanner: Scanner = {
       }
     }
 
-    /* ------------------------- no test suite at all ------------------------- */
+
     if (testFiles.length === 0 && sourceFiles.length > 0) {
       findings.push(
         createFinding({
@@ -168,7 +168,7 @@ export const testingScanner: Scanner = {
       return findings;
     }
 
-    /* -------------------------- untested high risk -------------------------- */
+
     for (const file of sourceFiles) {
       if (isTriviallyTestable(file)) continue;
       if (covered.has(file.path)) continue;
@@ -176,7 +176,7 @@ export const testingScanner: Scanner = {
       const highRisk = HIGH_RISK_PATTERN.test(file.path);
       const exportsSomething = /module\.exports|export\s+(?:default|const|function|class)|^def\s/m.test(file.content);
       if (!exportsSomething) continue;
-      // Only surface substantial modules, so the list stays actionable.
+
       if (!highRisk && file.loc < 40) continue;
 
       findings.push(

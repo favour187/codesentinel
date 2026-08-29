@@ -12,20 +12,20 @@ import { systemPrompt } from '../prompt';
 import { collectFindingEvidence } from './explain-finding';
 import { detectTestFramework, getTestsCovering } from '../context';
 
-/**
- * Item 3: the AI fix engine.
- *
- * The safety model, in order:
- *  1. The model proposes a *snippet replacement*, never a diff and never a
- *     whole file. Whole-file rewrites silently drop code; model-authored diffs
- *     have wrong line numbers.
- *  2. We verify the snippet it claims to replace actually exists in the real
- *     file. If not, the fix is rejected outright — that is the signature of an
- *     ungrounded answer.
- *  3. We compute the diff ourselves and structurally validate the result.
- *  4. The fix is stored as `proposed`. Nothing touches the repository until a
- *     human explicitly asks for a branch or a pull request.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const log = createLogger('ai:fix');
 
@@ -42,7 +42,7 @@ export interface FixProposal {
   readonly risks: readonly string[];
   readonly testsToRun: readonly string[];
   readonly confidence: 'high' | 'medium' | 'low';
-  /** Non-fatal warnings from patch validation, shown alongside the diff. */
+
   readonly warnings: readonly string[];
   readonly provider: string;
   readonly model: string;
@@ -80,7 +80,7 @@ export async function generateFix(
     };
   }
 
-  // The live file is the source of truth the patch must apply to.
+
   const file = await readRepositoryFile(finding.repositoryId, finding.filePath);
   if (!file) {
     return {
@@ -138,10 +138,10 @@ export async function generateFix(
 
   const proposed = result.data;
 
-  /*
-   * Path check. A fix for a different file than the finding is either a
-   * misunderstanding or an injection success; either way, refuse it.
-   */
+
+
+
+
   if (proposed.filePath !== finding.filePath) {
     log.warn('Rejected fix targeting a different file', {
       findingId,
@@ -180,11 +180,11 @@ export async function generateFix(
     path: finding.filePath,
   });
 
-  /*
-   * Validation problems do not discard the fix: a reviewer may still want to
-   * see a nearly-right patch. They are surfaced as warnings on the diff, and
-   * the fix stays `proposed` like any other.
-   */
+
+
+
+
+
   const db = await getDb();
   const [row] = await db
     .insert(fixes)
@@ -234,7 +234,7 @@ export async function generateFix(
   };
 }
 
-/** Fixes already proposed for a finding, newest first. */
+
 export async function listFixesForFinding(findingId: string) {
   const db = await getDb();
   return db.select().from(fixes).where(eq(fixes.findingId, findingId));

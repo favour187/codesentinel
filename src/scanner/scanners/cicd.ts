@@ -1,12 +1,12 @@
 import { createFinding } from '../finding';
 import type { Finding, ScanContext, Scanner, SourceFile } from '../types';
 
-/**
- * GitHub Actions / CI workflow scanner.
- *
- * Reads workflow YAML as text. Does not execute workflows. Flags obvious
- * unsafe patterns with evidence.
- */
+
+
+
+
+
+
 
 const SCANNER_ID = 'cicd';
 

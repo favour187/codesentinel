@@ -10,14 +10,14 @@ export const dynamic = 'force-dynamic';
 
 const log = createLogger('api:auth:demo');
 
-/**
- * Sign in to the local demo workspace.
- *
- * This grants access ONLY to `source: 'demo'` repositories — the bundled
- * intentionally-vulnerable fixture that CodeSentinel scans for real. It never
- * touches a third-party GitHub repository.
- */
-/** GET is accepted so a bookmark or prefetch does not return 405. */
+
+
+
+
+
+
+
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   return POST(request);
 }

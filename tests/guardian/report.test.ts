@@ -85,7 +85,7 @@ describe('renderPullRequestComment', () => {
   });
 
   it('states that no code was modified', () => {
-    // Standing requirement: never modify code without approval, and say so.
+
     const body = renderPullRequestComment(riskFor([]), ctx);
     expect(body).toMatch(/No code was modified/i);
   });
@@ -172,13 +172,13 @@ describe('buildCheckRun', () => {
   });
 
   it('concludes neutral for findings below the blocking threshold', () => {
-    // Visible but non-blocking: a check that fails on every info finding gets muted.
+
     const check = buildCheckRun(riskFor([finding({ severity: 'low' })]), ctx);
     expect(check.conclusion).toBe('neutral');
   });
 
   it('concludes action_required when an analyzer errored', () => {
-    // "We could not check" must never look like "we checked and it is fine".
+
     const check = buildCheckRun(riskFor([]), {
       ...ctx,
       degraded: [{ id: 'security', status: 'error', message: 'parser crash' }],

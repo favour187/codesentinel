@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { createUnifiedDiff, DiffError, locateSnippet, validatePatch } from '@/analysis/diff';
 
-/**
- * The diff layer is what stops an ungrounded AI fix from reaching a reviewer
- * as though it were real. Its central guarantee: a patch is only produced when
- * the code it claims to replace actually exists in the file.
- */
+
+
+
+
+
 
 const SOURCE = [
   'import { db } from "./db";',
@@ -80,7 +80,7 @@ describe('createUnifiedDiff', () => {
 
     expect(patched).toContain('db.raw(query, [id])');
     expect(patched).not.toContain('WHERE id = " + id');
-    // Everything else must survive untouched.
+
     expect(patched).toContain('export function health() {');
     expect(patched).toContain('import { db } from "./db";');
   });

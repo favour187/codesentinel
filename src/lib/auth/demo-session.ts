@@ -4,17 +4,17 @@ import { createLogger } from '@/lib/logger';
 
 const log = createLogger('auth:demo');
 
-/**
- * The local demo identity.
- *
- * CodeSentinel is open-source and must be evaluable without registering a
- * GitHub OAuth app. The demo user owns ONLY demo-source repositories (the
- * bundled intentionally-vulnerable fixture), and every demo repository is
- * flagged `source: 'demo'` so its scan results can never be presented as real
- * production analysis.
- *
- * A negative githubId guarantees no collision with a real GitHub account id.
- */
+
+
+
+
+
+
+
+
+
+
+
 export const DEMO_GITHUB_ID = -1;
 export const DEMO_LOGIN = 'demo-user';
 

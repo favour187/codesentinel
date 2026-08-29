@@ -14,20 +14,20 @@ import {
 import type { Severity } from '@/db/schema';
 import { createLogger } from '@/lib/logger';
 
-/**
- * Repository-grounded context retrieval.
- *
- * The whole point of CodeSentinel's AI layer: answers come from what is
- * actually in this repository, retrieved from deterministic scan data, not
- * from what a model remembers about code in general.
- *
- * Two rules shape everything here:
- *  1. **Never send the whole repository.** Retrieval is targeted — the file in
- *     question, its immediate graph neighbours, the relevant findings.
- *  2. **Everything returned is citable.** Each piece carries the path, id or
- *     SHA it came from, so the UI can show its evidence and the activity log
- *     can record what grounded the answer.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const log = createLogger('ai:context');
 
@@ -78,7 +78,7 @@ export interface RepositoryContext {
   readonly memory: readonly MemoryFact[];
 }
 
-/** The latest completed scan that owns the repository's live state. */
+
 export async function latestScanId(repositoryId: string): Promise<string | null> {
   const db = await getDb();
   const rows = await db
@@ -135,8 +135,8 @@ export async function getRepositoryContext(repositoryId: string): Promise<Reposi
     .orderBy(desc(healthSnapshots.createdAt))
     .limit(1);
 
-  // Direct dependencies double as the framework signal — far more reliable
-  // than guessing a stack from file names.
+
+
   const frameworkRows = scanId
     ? await db
         .select({ name: dependencies.name })
@@ -159,7 +159,7 @@ export async function getRepositoryContext(repositoryId: string): Promise<Reposi
   };
 }
 
-/** Human-authored facts about this repository. Authoritative context. */
+
 export async function getMemory(repositoryId: string, paths?: readonly string[]): Promise<MemoryFact[]> {
   const db = await getDb();
   const rows = await db
@@ -179,14 +179,14 @@ export async function getMemory(repositoryId: string, paths?: readonly string[])
 
   if (!paths || paths.length === 0) return facts;
 
-  /*
-   * A fact scoped to specific paths only applies when one of those paths is in
-   * play. Unscoped facts (repository-wide policies) always apply.
-   *
-   * A scope may be a file or a directory, and users write directories both
-   * with and without a trailing slash, so it is normalised away before the
-   * prefix comparison.
-   */
+
+
+
+
+
+
+
+
   return facts.filter(
     (f) =>
       f.paths.length === 0 ||
@@ -197,13 +197,13 @@ export async function getMemory(repositoryId: string, paths?: readonly string[])
   );
 }
 
-/**
- * Files that matter for a given path: the file itself, what it imports, and
- * what imports it.
- *
- * This is the blast-radius graph and the chat retrieval set at once, because
- * "what else does this touch" is the same question in both features.
- */
+
+
+
+
+
+
+
 export async function getFileNeighbourhood(
   repositoryId: string,
   path: string,
@@ -239,7 +239,7 @@ export async function getFileNeighbourhood(
   };
 }
 
-/** Findings for one file, most severe first. */
+
 export async function getFindingsForFile(
   repositoryId: string,
   path: string,
@@ -277,7 +277,7 @@ export async function getFindingById(findingId: string): Promise<
   };
 }
 
-/** Tests that appear to cover a path — used to recommend what to run. */
+
 export async function getTestsCovering(repositoryId: string, path: string): Promise<string[]> {
   const db = await getDb();
   const scanId = await latestScanId(repositoryId);
@@ -287,7 +287,7 @@ export async function getTestsCovering(repositoryId: string, path: string): Prom
   return rows.filter((r) => r.coversPaths.includes(path)).map((r) => r.filePath);
 }
 
-/** The detected test framework, or null when the repository has no tests. */
+
 export async function detectTestFramework(repositoryId: string): Promise<string | null> {
   const db = await getDb();
   const scanId = await latestScanId(repositoryId);
@@ -304,7 +304,7 @@ export async function detectTestFramework(repositoryId: string): Promise<string 
   return rows[0]?.framework ?? null;
 }
 
-/** Commit history touching a path — the Code Archaeologist's evidence. */
+
 export interface CommitContext {
   readonly sha: string;
   readonly message: string;
@@ -312,7 +312,7 @@ export interface CommitContext {
   readonly authoredAt: Date | null;
   readonly additions: number;
   readonly deletions: number;
-  /** True when this commit is known to touch the requested path. */
+
   readonly touchesPath: boolean;
 }
 
@@ -329,11 +329,11 @@ export async function getFileHistory(
     .orderBy(desc(commits.authoredAt))
     .limit(200);
 
-  /*
-   * Filter in application code: changed_paths is JSONB and the portable SQL for
-   * "array contains" varies across the Postgres versions this runs on. 200 rows
-   * is small enough that the simpler, definitely-correct path wins.
-   */
+
+
+
+
+
   const toContext = (r: (typeof rows)[number], touchesPath: boolean): CommitContext => ({
     sha: r.sha,
     message: r.message ?? '',
@@ -349,26 +349,26 @@ export async function getFileHistory(
   const touching = rows.filter((r) => r.changedPaths.includes(path));
   if (touching.length > 0) return touching.slice(0, limit).map((r) => toContext(r, true));
 
-  /*
-   * No commit is recorded as touching this file. That is a real possibility
-   * (history predates guardian, or paths were capped), so fall back to recent
-   * repository history — but flag it, so the archaeologist can say the
-   * evidence is repository-level rather than file-level instead of implying a
-   * link that was never established.
-   */
+
+
+
+
+
+
+
   return rows.slice(0, limit).map((r) => toContext(r, false));
 }
 
-/* -------------------------------------------------------------------------- */
-/* Prompt rendering                                                           */
-/* -------------------------------------------------------------------------- */
 
-/**
- * Render a code excerpt with line numbers and a bounded window.
- *
- * Line numbers let the model refer to real locations instead of guessing, and
- * the window keeps a 4000-line file from consuming the whole context budget.
- */
+
+
+
+
+
+
+
+
+
 export function renderExcerpt(
   content: string,
   focusLine: number | null,
@@ -387,7 +387,7 @@ export function renderExcerpt(
   return { text: body, firstLine: first, lastLine: last };
 }
 
-/** Compact file list for a prompt. */
+
 export function renderFileList(list: readonly FileContext[]): string {
   if (list.length === 0) return '(none)';
   return list
@@ -410,11 +410,11 @@ export function renderMemory(facts: readonly MemoryFact[]): string {
   return facts.map((f) => `- [${f.kind}] ${f.title}: ${f.body}`).join('\n');
 }
 
-/* -------------------------------------------------------------------------- */
-/* Internals                                                                  */
-/* -------------------------------------------------------------------------- */
 
-/** Order by real severity, not alphabetically. */
+
+
+
+
 const SEVERITY_RANK = sql`
   case ${findings.severity}
     when 'critical' then 0

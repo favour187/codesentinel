@@ -8,27 +8,27 @@ import { componentKeyOf } from '@/twin/components';
 import { fileOfKey, TwinGraph } from '@/twin/graph';
 import { loadSymbols } from '@/twin/graph';
 
-/**
- * Blast Radius 2.0 — impact analysis over the Digital Twin.
- *
- * The v1 engine (`blast-radius.ts`) walked `files.imports`, which only knows
- * "file A imported file B". This one walks `code_edges`, so it can answer at
- * symbol granularity, attach the evidence that justified each hop, and reach
- * the API, database and test surfaces that the twin records separately.
- *
- * Design rules, unchanged from v1 and worth restating because everything here
- * depends on them:
- *
- *   - Deterministic. No model is consulted. AI may narrate a result afterwards.
- *   - Grounded. Every entry carries the stored evidence that produced it. If
- *     the graph does not justify a relationship, it is not reported.
- *   - Bounded. Traversal stops at a depth and a node cap, because an "impact"
- *     list containing the whole repository is not an answer.
- *
- * Scoring reuses `scoreImpact` from v1 deliberately: the bands are already
- * documented and tested, and changing the numbers underneath users mid-phase
- * would invalidate every score they have seen.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 import { impactBand, scoreImpact } from './blast-radius';
 
@@ -36,18 +36,18 @@ export type ImpactTargetType = 'file' | 'symbol' | 'commit' | 'pull_request';
 
 export interface ImpactTarget {
   readonly type: ImpactTargetType;
-  /** File path, `path#symbol`, commit SHA, or PR number as a string. */
+
   readonly value: string;
 }
 
-/** A file pulled into the radius, with the reason it was pulled in. */
+
 export interface ImpactedFile {
   readonly path: string;
-  /** 1 = imports the origin directly; 2+ = reached through another file. */
+
   readonly depth: number;
-  /** The file one hop closer to the origin. */
+
   readonly via: string;
-  /** The stored edge evidence for the hop that reached this file. */
+
   readonly evidence: string | null;
   readonly component: string;
   readonly loc: number;
@@ -60,7 +60,7 @@ export interface ImpactedRoute {
   readonly route: string;
   readonly filePath: string;
   readonly evidence: string | null;
-  /** True when the route's file is the origin rather than a dependent. */
+
   readonly direct: boolean;
 }
 
@@ -68,7 +68,7 @@ export interface ImpactedTest {
   readonly testPath: string;
   readonly covers: string;
   readonly evidence: string | null;
-  /** Tests covering the origin itself run first. */
+
   readonly direct: boolean;
 }
 
@@ -80,35 +80,35 @@ export interface SensitiveArea {
 export interface HistoricalSignal {
   readonly kind: 'recurring_finding' | 'high_churn' | 'recent_failure';
   readonly detail: string;
-  /** What in the record supports this — a count, a date, a SHA. */
+
   readonly evidence: string;
 }
 
 export interface ImpactAnalysis {
   readonly target: ImpactTarget;
   readonly resolved: boolean;
-  /** Files the target actually consists of (1 for a file, N for a commit/PR). */
+
   readonly originFiles: readonly string[];
-  /** Symbols in the origin, when the target is a symbol or a small change. */
+
   readonly originSymbols: ReadonlyArray<{ key: string; name: string; kind: string; signature: string | null }>;
   readonly directDependents: readonly ImpactedFile[];
   readonly indirectDependents: readonly ImpactedFile[];
-  /** Direct callers of the target symbol. Empty for file-level targets. */
+
   readonly callers: ReadonlyArray<{ fromKey: string; filePath: string | null; evidence: string | null; line: number | null }>;
   readonly affectedRoutes: readonly ImpactedRoute[];
   readonly affectedDatabases: ReadonlyArray<{ target: string; filePath: string; evidence: string | null }>;
   readonly affectedComponents: ReadonlyArray<{ key: string; fileCount: number }>;
   readonly affectedTests: readonly ImpactedTest[];
-  /** Files in the radius with no test covering them. */
+
   readonly untestedFiles: readonly string[];
   readonly sensitiveAreas: readonly SensitiveArea[];
   readonly openFindings: ReadonlyArray<{ id: string; title: string; severity: Severity; filePath: string | null }>;
   readonly history: readonly HistoricalSignal[];
   readonly impactScore: number;
   readonly impactLevel: 'low' | 'medium' | 'high' | 'critical';
-  /** Set when the traversal hit its cap — the true radius may be larger. */
+
   readonly truncated: boolean;
-  /** Populated when `resolved` is false, so the UI can explain why. */
+
   readonly reason?: string;
 }
 
@@ -124,14 +124,14 @@ const SENSITIVE_PATTERNS: ReadonlyArray<{ pattern: RegExp; label: string }> = [
 const MAX_NODES = 200;
 const MAX_DEPTH = 3;
 
-/**
- * Analyse the impact of changing a file, a symbol, a commit or a pull request.
- *
- * All four target types collapse to the same question — "given this set of
- * origin files, what else is involved" — so they share one traversal. What
- * differs is how the origin set is derived and, for symbols, that the caller
- * list is exact rather than file-level.
- */
+
+
+
+
+
+
+
+
 export async function analyseImpact(repositoryId: string, target: ImpactTarget): Promise<ImpactAnalysis> {
   const db = await getDb();
   const graph = await TwinGraph.load(repositoryId);
@@ -145,7 +145,7 @@ export async function analyseImpact(repositoryId: string, target: ImpactTarget):
   const fileRows = scanId ? await db.select().from(files).where(eq(files.scanId, scanId)) : [];
   const byPath = new Map(fileRows.map((r) => [r.path, r]));
 
-  /* ---------------- Traversal ---------------- */
+
 
   const reached = graph.reachableDependents(originFiles, { maxDepth: MAX_DEPTH, maxNodes: MAX_NODES });
   const truncated = reached.length >= MAX_NODES;
@@ -153,7 +153,7 @@ export async function analyseImpact(repositoryId: string, target: ImpactTarget):
   const tested = graph.testedFiles();
   const affectedPaths = [...originFiles, ...reached.map((r) => r.path)];
 
-  /* ---------------- Findings ---------------- */
+
 
   const findingRows =
     affectedPaths.length > 0
@@ -182,7 +182,7 @@ export async function analyseImpact(repositoryId: string, target: ImpactTarget):
 
   const toImpacted = (r: { path: string; depth: number; via: string }): ImpactedFile => {
     const row = byPath.get(r.path);
-    // The evidence for this hop is the edge from the dependent into `via`.
+
     const edge = graph
       .edgesFrom(r.path)
       .find((e) => (e.type === 'imports' || e.type === 'calls') && fileOfKey(e.toKey) === r.via);
@@ -202,7 +202,7 @@ export async function analyseImpact(repositoryId: string, target: ImpactTarget):
   const directDependents = reached.filter((r) => r.depth === 1).map(toImpacted);
   const indirectDependents = reached.filter((r) => r.depth > 1).map(toImpacted);
 
-  /* ---------------- Surfaces ---------------- */
+
 
   const originSet = new Set(originFiles);
   const affectedRoutes: ImpactedRoute[] = graph
@@ -228,18 +228,18 @@ export async function analyseImpact(repositoryId: string, target: ImpactTarget):
 
   const untestedFiles = affectedPaths.filter((p) => !tested.has(p) && !isTestish(p)).sort();
 
-  /* ---------------- Sensitivity ---------------- */
+
 
   const sensitiveAreas: SensitiveArea[] = SENSITIVE_PATTERNS.map(({ pattern, label }) => ({
     label,
     paths: affectedPaths.filter((p) => pattern.test(p)).sort(),
   })).filter((a) => a.paths.length > 0);
 
-  /* ---------------- History ---------------- */
+
 
   const history = await historicalSignals(repositoryId, originFiles, findingRows);
 
-  /* ---------------- Score ---------------- */
+
 
   const impactScore = scoreImpact({
     directDependents: directDependents.length,
@@ -250,7 +250,7 @@ export async function analyseImpact(repositoryId: string, target: ImpactTarget):
     findingSeverities: findingRows.map((f) => f.severity),
   });
 
-  /* ---------------- Origin symbols ---------------- */
+
 
   const originSymbols = origin.symbolKey
     ? (await loadSymbols(repositoryId, originFiles))
@@ -285,20 +285,20 @@ export async function analyseImpact(repositoryId: string, target: ImpactTarget):
   };
 }
 
-/* -------------------------------------------------------------------------- */
-/* Origin resolution                                                          */
-/* -------------------------------------------------------------------------- */
+
+
+
 
 type OriginResult =
   | { ok: true; files: string[]; symbolKey?: string }
   | { ok: false; reason: string };
 
-/**
- * Turn a target into the set of files it touches.
- *
- * A commit or PR resolves through stored git records, so an unindexed commit
- * reports "not found" rather than silently analysing nothing.
- */
+
+
+
+
+
+
 async function resolveOrigin(repositoryId: string, target: ImpactTarget): Promise<OriginResult> {
   const db = await getDb();
 
@@ -372,17 +372,17 @@ async function fileExists(repositoryId: string, path: string): Promise<boolean> 
   return Boolean(row);
 }
 
-/* -------------------------------------------------------------------------- */
-/* History                                                                    */
-/* -------------------------------------------------------------------------- */
 
-/**
- * Historical signals for the origin files.
- *
- * These are facts drawn from stored records — how often a file changed, how
- * many findings it has accumulated — and the caller is expected to present
- * them as history rather than as prediction.
- */
+
+
+
+
+
+
+
+
+
+
 async function historicalSignals(
   repositoryId: string,
   originFiles: readonly string[],

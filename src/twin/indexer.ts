@@ -8,62 +8,62 @@ import type { SourceFile } from '@/scanner/types';
 import { parseFile, type ParsedFile } from './parsers';
 import { isExternalSpecifier, packageNameOf, resolveSpecifier } from './resolve';
 
-/**
- * The Digital Twin indexer.
- *
- * Turns a set of source files into rows in `symbols` and `code_edges`. Two
- * properties matter more than anything else here:
- *
- * 1. INCREMENTAL. Files are keyed by content hash in `index_state`. A re-index
- *    reparses only what changed, deletes the rows belonging to changed and
- *    removed files, and leaves everything else untouched. Re-indexing an
- *    unchanged repository is a hash comparison per file and zero writes.
- *
- * 2. GROUNDED. Every edge carries evidence — the specifier, the route literal,
- *    the call line. An edge that cannot be justified is not written. Calls that
- *    cannot be resolved to a definite target are dropped rather than guessed,
- *    which is why CALLS edges are fewer than call sites.
- */
 
-/**
- * Cache generation for the parser layer.
- *
- * `index_state` keys a file's cached result by content hash, which correctly
- * skips reparsing a file that has not changed. It does NOT notice when the
- * *parser* changed: after a parser fix, every unchanged file keeps its stale
- * symbols and edges forever, and the improvement never reaches an existing
- * repository. Bumping this constant invalidates every cached entry exactly
- * once, so a parser upgrade takes effect on the next scan.
- *
- * Bump this whenever a parser change alters the symbols, edges, routes or
- * database uses extracted from unchanged source.
- *
- * v2 — CommonJS `module.exports = { ... }` now marks the referenced
- *      declarations as exported.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export const INDEXER_VERSION = 2;
 
-/** The stored hash for a file: content plus the parser generation. */
+
 export function cacheKeyFor(contentHash: string): string {
   return `v${INDEXER_VERSION}:${contentHash}`;
 }
 
-/** How a symbol is addressed in an edge endpoint: `path#name`. */
+
 export function symbolKey(filePath: string, symbolName: string): string {
   return `${filePath}#${symbolName}`;
 }
 
-/** Dependency endpoints are namespaced so they cannot collide with file paths. */
+
 export function packageKey(name: string): string {
   return `pkg:${name}`;
 }
 
-/** Route endpoints, e.g. `api:GET /users/:id`. */
+
 export function routeKey(method: string, path: string): string {
   return `api:${method} ${path}`;
 }
 
-/** Database endpoints, e.g. `db:users` or `db:(unknown)`. */
+
 export function databaseKey(target: string | null): string {
   return `db:${target ?? '(unknown)'}`;
 }
@@ -78,7 +78,7 @@ interface EdgeDraft {
 }
 
 export interface IndexOptions {
-  /** Force a full reparse, ignoring stored hashes. */
+
   readonly force?: boolean;
   readonly logger?: { info: (msg: string, meta?: unknown) => void };
 }
@@ -95,12 +95,12 @@ export interface IndexResult {
   readonly parseErrors: ReadonlyArray<{ path: string; error: string }>;
 }
 
-/**
- * Index a repository into the Digital Twin.
- *
- * `files` is the same `SourceFile[]` the scanner already produced, so indexing
- * costs no additional filesystem work when it runs alongside a scan.
- */
+
+
+
+
+
+
 export async function indexRepository(
   repositoryId: string,
   files: readonly SourceFile[],
@@ -117,20 +117,20 @@ export async function indexRepository(
   const previousHashes = new Map(existing.map((row) => [row.filePath, row.contentHash]));
   const currentPaths = new Set(files.map((f) => f.path));
 
-  /* Files that disappeared since the last index. */
+
   const removedPaths = [...previousHashes.keys()].filter((p) => !currentPaths.has(p));
 
-  /* Files whose content changed (or everything, when forced). */
+
   const changed = files.filter(
     (f) => options.force || previousHashes.get(f.path) !== cacheKeyFor(f.contentHash),
   );
   const unchangedCount = files.length - changed.length;
 
-  /*
-   * Edges are resolved against the full path set, not just changed files: a
-   * changed file can import an unchanged one. The parse itself is what we
-   * avoid repeating, which is where essentially all the cost is.
-   */
+
+
+
+
+
   const knownPaths = new Set(files.map((f) => f.path));
 
   const parsed = new Map<string, ParsedFile>();
@@ -145,7 +145,7 @@ export async function indexRepository(
     if (result.error) parseErrors.push({ path: file.path, error: result.error });
   }
 
-  /* ---------------- build edges for the changed files ---------------- */
+
 
   const fileByPath = new Map(files.map((f) => [f.path, f]));
   const edgesByFile = new Map<string, EdgeDraft[]>();
@@ -156,17 +156,17 @@ export async function indexRepository(
     edgesByFile.set(file.path, buildFileEdges(file, result, knownPaths, fileByPath));
   }
 
-  /* ---------------- persist ---------------- */
+
 
   const stalePaths = [...changed.map((f) => f.path), ...removedPaths];
 
   await db.transaction(async (tx) => {
-    /*
-     * Delete-then-insert per changed file. Scoped by fromKey prefix so an edge
-     * owned by an untouched file is never collateral damage, which is what
-     * makes a single-file re-index actually incremental rather than a
-     * disguised full rebuild.
-     */
+
+
+
+
+
+
     for (const batch of chunk(stalePaths, 200)) {
       if (batch.length === 0) continue;
       await tx
@@ -177,7 +177,7 @@ export async function indexRepository(
         .where(and(eq(codeEdges.repositoryId, repositoryId), inArray(codeEdges.fromKey, batch)));
     }
 
-    /* Symbol-scoped edges (CALLS from `path#symbol`) need a separate sweep. */
+
     for (const path of stalePaths) {
       await tx.delete(codeEdges).where(
         and(
@@ -198,7 +198,7 @@ export async function indexRepository(
       }
     }
 
-    /* Insert symbols. */
+
     const symbolRows = changed.flatMap((file) => {
       const result = parsed.get(file.path);
       if (!result) return [];
@@ -221,7 +221,7 @@ export async function indexRepository(
       if (batch.length > 0) await tx.insert(symbolsTable).values(batch);
     }
 
-    /* Insert edges, de-duplicated on the unique key. */
+
     const seen = new Set<string>();
     const edgeRows: Array<typeof codeEdges.$inferInsert> = [];
     for (const drafts of edgesByFile.values()) {
@@ -236,7 +236,7 @@ export async function indexRepository(
       if (batch.length > 0) await tx.insert(codeEdges).values(batch).onConflictDoNothing();
     }
 
-    /* Update the index ledger. */
+
     for (const file of changed) {
       const result = parsed.get(file.path);
       const edgeCount = edgesByFile.get(file.path)?.length ?? 0;
@@ -266,7 +266,7 @@ export async function indexRepository(
     }
   });
 
-  /* ---------------- report ---------------- */
+
 
   const totals = await db
     .select({ type: codeEdges.type })
@@ -306,11 +306,11 @@ export async function indexRepository(
   return result;
 }
 
-/**
- * Every edge a single file contributes.
- *
- * Split out so it can be unit tested without a database.
- */
+
+
+
+
+
 export function buildFileEdges(
   file: SourceFile,
   result: ParsedFile,
@@ -320,7 +320,7 @@ export function buildFileEdges(
   const edges: EdgeDraft[] = [];
   const language = file.language;
 
-  /* ---------------- IMPORTS / DEPENDS_ON ---------------- */
+
   const importedPaths = new Map<string, string[]>();
 
   for (const imp of result.imports) {
@@ -337,7 +337,7 @@ export function buildFileEdges(
     }
 
     const target = resolveSpecifier(file.path, imp.specifier, knownPaths, language);
-    if (!target) continue; // Unresolvable: no edge, rather than a guessed one.
+    if (!target) continue;
 
     edges.push({
       type: 'imports',
@@ -353,11 +353,11 @@ export function buildFileEdges(
     importedPaths.set(target, names);
   }
 
-  /* ---------------- TESTS ---------------- */
+
   if (file.isTest || isTestPath(file.path)) {
     for (const target of importedPaths.keys()) {
       const targetFile = fileByPath.get(target);
-      if (targetFile?.isTest) continue; // A helper import is not coverage.
+      if (targetFile?.isTest) continue;
       edges.push({
         type: 'tests',
         fromKey: file.path,
@@ -369,7 +369,7 @@ export function buildFileEdges(
     }
   }
 
-  /* ---------------- EXPOSES_API ---------------- */
+
   for (const route of result.routes) {
     edges.push({
       type: 'exposes_api',
@@ -381,29 +381,29 @@ export function buildFileEdges(
     });
   }
 
-  /* ---------------- USES_DATABASE ---------------- */
+
   for (const use of result.databaseUses) {
     edges.push({
       type: 'uses_database',
       fromKey: file.path,
       toKey: databaseKey(use.target),
-      // A named table from SQL is certain; a client import only proves intent.
+
       confidence: use.via === 'client' ? 'probable' : 'certain',
       evidence: use.evidence,
       lineNumber: use.line,
     });
   }
 
-  /* ---------------- CALLS ---------------- */
-  /*
-   * Only calls that resolve to a definite declaration are recorded. Two cases
-   * qualify: a call to a name imported from a known file, and a call to a
-   * symbol declared in this same file. Everything else — methods on runtime
-   * objects, dynamic dispatch, same-named helpers in unrelated modules —
-   * is dropped. The spec says "CALLS where reliably detectable", and a call
-   * graph padded with name collisions would poison every impact calculation
-   * built on top of it.
-   */
+
+
+
+
+
+
+
+
+
+
   const importedNameToPath = new Map<string, string>();
   for (const [target, names] of importedPaths) {
     for (const name of names) if (!importedNameToPath.has(name)) importedNameToPath.set(name, target);
@@ -412,7 +412,7 @@ export function buildFileEdges(
 
   const seenCalls = new Set<string>();
   for (const call of result.calls) {
-    // `obj.method()` where obj is an imported namespace still resolves.
+
     const lookupName = call.receiver && importedNameToPath.has(call.receiver) ? call.receiver : call.callee;
     const targetPath = importedNameToPath.get(lookupName);
 
@@ -421,7 +421,7 @@ export function buildFileEdges(
 
     if (targetPath) {
       toKey = symbolKey(targetPath, call.receiver === lookupName ? call.callee : lookupName);
-      // Namespace member calls are a name match inside a known file.
+
       confidence = call.receiver === lookupName ? 'probable' : 'certain';
     } else if (!call.receiver && localSymbols.has(call.callee)) {
       toKey = symbolKey(file.path, call.callee);

@@ -1,10 +1,10 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-/**
- * Panel primitive. Deliberately flat and quiet — the design language relies on
- * whitespace and hairline borders rather than heavy shadows or nested cards.
- */
+
+
+
+
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div

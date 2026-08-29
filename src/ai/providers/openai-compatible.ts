@@ -1,13 +1,13 @@
 import { AIProviderError } from '../provider';
 import type { AICompletion, AICompletionRequest, AIProvider } from '../provider';
 
-/**
- * Shared transport for OpenAI-compatible chat-completions endpoints.
- *
- * Featherless and Groq both implement this dialect, so the wire logic —
- * timeouts, error classification, usage extraction — lives here once. Each
- * concrete provider supplies only its identity and configuration.
- */
+
+
+
+
+
+
+
 
 export interface OpenAICompatibleConfig {
   readonly id: string;
@@ -15,7 +15,7 @@ export interface OpenAICompatibleConfig {
   readonly model: string;
   readonly baseUrl: string;
   readonly timeoutMs: number;
-  /** Injectable for tests; never reaches the network in the suite. */
+
   readonly fetchImpl?: typeof fetch;
 }
 
@@ -197,7 +197,7 @@ function extractError(raw: string): string {
     const message = parsed.error?.message;
     if (typeof message === 'string') return message;
   } catch {
-    /* fall through */
+
   }
   return raw || 'no response body';
 }

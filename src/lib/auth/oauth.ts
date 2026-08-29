@@ -2,17 +2,17 @@ import { getEnv, getFeatures } from '@/lib/env';
 import { randomToken, safeEqual, sha256 } from '@/lib/crypto';
 import { createLogger } from '@/lib/logger';
 
-/**
- * GitHub OAuth (web application flow) with CSRF protection.
- *
- * Best practices implemented:
- *  - `state` parameter, stored in an httpOnly cookie and compared in constant
- *    time on callback (prevents login CSRF).
- *  - minimal scopes: `read:user` + `repo` (repo is required to read private
- *    repository contents; users may install the GitHub App instead for
- *    finer-grained, per-repository access).
- *  - the access token is exchanged server-side only and never sent to a client.
- */
+
+
+
+
+
+
+
+
+
+
+
 
 const log = createLogger('auth:oauth');
 
@@ -41,7 +41,7 @@ export function buildAuthorizeUrl(redirectPath = '/', publicOrigin?: string): OA
   if (!isOAuthConfigured()) {
     throw new Error('GitHub OAuth is not configured (GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET).');
   }
-  // state = random nonce + where to return the user afterwards
+
   const origin = (publicOrigin ?? env.APP_URL).replace(/\/$/, '');
   const nonce = randomToken(24);
   const state = `${nonce}.${Buffer.from(redirectPath).toString('base64url')}.${Buffer.from(origin).toString('base64url')}`;
@@ -65,14 +65,14 @@ export function redirectPathFromState(state: string): string {
   if (!encoded) return '/';
   try {
     const path = Buffer.from(encoded, 'base64url').toString('utf8');
-    // Only allow same-origin relative paths — blocks open-redirect abuse.
+
     return path.startsWith('/') && !path.startsWith('//') ? path : '/';
   } catch {
     return '/';
   }
 }
 
-/** Public origin baked into `state` so token exchange uses the same callback URL. */
+
 export function originFromState(state: string): string {
   const encoded = state.split('.')[2];
   if (!encoded) return getEnv().APP_URL.replace(/\/$/, '');
@@ -80,7 +80,7 @@ export function originFromState(state: string): string {
     const origin = Buffer.from(encoded, 'base64url').toString('utf8');
     if (origin.startsWith('http://') || origin.startsWith('https://')) return origin.replace(/\/$/, '');
   } catch {
-    /* fall through */
+
   }
   return getEnv().APP_URL.replace(/\/$/, '');
 }

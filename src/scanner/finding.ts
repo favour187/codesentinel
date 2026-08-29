@@ -4,15 +4,15 @@ import type { Category, Severity } from '@/db/schema';
 import { maskSecret } from '@/lib/crypto';
 import type { Finding } from './types';
 
-/**
- * Finding construction and normalization.
- *
- * All scanners must build findings through createFinding(); nothing constructs
- * the object literal directly. That gives us one place to guarantee:
- *   1. evidence is truncated and never contains raw secret material,
- *   2. fingerprints are computed identically everywhere,
- *   3. confidence is clamped and severities are valid.
- */
+
+
+
+
+
+
+
+
+
 
 const MAX_EVIDENCE_LENGTH = 240;
 
@@ -33,29 +33,29 @@ export interface CreateFindingInput {
   references?: Array<{ label: string; url?: string }>;
   relatedTests?: string[];
   metadata?: Record<string, unknown>;
-  /**
-   * Literal secret values that must be masked out of the evidence before it is
-   * stored. Secret rules pass their captured match here.
-   */
+
+
+
+
   redact?: string[];
-  /**
-   * Overrides the snippet used for fingerprinting. Rules whose evidence varies
-   * between runs (timings, counts) pass a stable value instead.
-   */
+
+
+
+
   fingerprintSeed?: string;
 }
 
-/** Collapses whitespace so trivial reformatting doesn't change identity. */
+
 export function normalizeSnippet(input: string): string {
   return input.replace(/\s+/g, ' ').trim();
 }
 
-/**
- * Stable identity for a finding across scans.
- *
- * Deliberately excludes line numbers: inserting a line above an issue must not
- * make it look like the old finding was resolved and a new one introduced.
- */
+
+
+
+
+
+
 export function computeFingerprint(ruleId: string, filePath: string | null, snippet: string): string {
   return createHash('sha256')
     .update(`${ruleId}\u0000${filePath ?? ''}\u0000${normalizeSnippet(snippet)}`)
@@ -63,7 +63,7 @@ export function computeFingerprint(ruleId: string, filePath: string | null, snip
     .slice(0, 32);
 }
 
-/** Masks every provided secret value inside a piece of evidence text. */
+
 export function redactEvidence(evidence: string, secrets: readonly string[]): string {
   let out = evidence;
   for (const secret of secrets) {
@@ -74,7 +74,7 @@ export function redactEvidence(evidence: string, secrets: readonly string[]): st
   return out;
 }
 
-/** Clamps to 0..1 and rounds to 2dp so composed confidences stay readable. */
+
 export function roundConfidence(value: number): number {
   return Math.round(Math.min(1, Math.max(0, value)) * 100) / 100;
 }
@@ -91,8 +91,8 @@ export function createFinding(input: CreateFindingInput): Finding {
     }
   }
 
-  // Fingerprint from the seed if given, else the REDACTED evidence, so raw
-  // secret material is never hashed into a value we persist alongside a mask.
+
+
   const seed = input.fingerprintSeed ?? evidence ?? input.title;
 
   return {
@@ -107,8 +107,8 @@ export function createFinding(input: CreateFindingInput): Finding {
     lineStart: input.lineStart ?? null,
     lineEnd: input.lineEnd ?? input.lineStart ?? null,
     evidence,
-    // Rounded: rules compose confidence arithmetically (base + context
-    // bonus), which otherwise surfaces artefacts like 0.7999999999999999.
+
+
     confidence: roundConfidence(input.confidence ?? 0.8),
     whyItMatters: input.whyItMatters ?? null,
     remediation: input.remediation ?? null,
@@ -126,14 +126,14 @@ const SEVERITY_RANK: Record<Severity, number> = {
   info: 4,
 };
 
-/**
- * Merges findings from all scanners into one canonical list.
- *
- * Two scanners can legitimately flag the same line (e.g. a secrets rule and a
- * security rule both matching a hardcoded token). Deduping by fingerprint keeps
- * the highest-severity instance and records which scanners agreed, which is a
- * useful confidence signal rather than duplicated noise in the UI.
- */
+
+
+
+
+
+
+
+
 export function dedupeFindings(findings: Finding[]): Finding[] {
   const byFingerprint = new Map<string, Finding>();
 
@@ -161,7 +161,7 @@ export function dedupeFindings(findings: Finding[]): Finding[] {
   return sortFindings([...byFingerprint.values()]);
 }
 
-/** Canonical ordering: severity, then file, then line. */
+
 export function sortFindings(findings: Finding[]): Finding[] {
   return [...findings].sort((a, b) => {
     const bySeverity = SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity];

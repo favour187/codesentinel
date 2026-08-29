@@ -1,4 +1,4 @@
-// DEMO FIXTURE — minimal stub so the fixture parses as a coherent module graph.
+
 const { DB_CONFIG } = require('./config');
 
 async function raw(query) {

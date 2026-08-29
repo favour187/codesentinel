@@ -1,10 +1,10 @@
 @import 'tailwindcss';
 
-/* ==========================================================================
-   CodeSentinel design tokens
-   A premium developer-tool aesthetic: deep neutral canvas, restrained accent,
-   generous spacing, subtle borders, strong typographic hierarchy.
-   ========================================================================== */
+
+
+
+
+
 
 @theme {
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Inter, sans-serif;
@@ -19,11 +19,11 @@
 
 @layer base {
   :root {
-    /* Light theme */
+
     --background: 0 0% 100%;
     --surface: 240 20% 99%;
     --surface-raised: 0 0% 100%;
-    /* Recessed panels: code blocks and diffs sit *below* the page surface. */
+
     --surface-sunken: 240 14% 97%;
     --foreground: 240 10% 8%;
     --muted: 240 5% 96%;
@@ -38,7 +38,7 @@
     --accent: 240 5% 96%;
     --accent-foreground: 240 10% 8%;
 
-    /* Severity scale — consistent everywhere findings appear */
+
     --critical: 349 89% 46%;
     --high: 20 90% 48%;
     --medium: 38 92% 45%;
@@ -101,7 +101,7 @@
     overflow-wrap: anywhere;
   }
 
-  /* Keyboard-first: always show a clear focus ring for keyboard users. */
+
   :focus-visible {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
@@ -112,7 +112,7 @@
     background: hsl(var(--primary) / 0.25);
   }
 
-  /* Refined scrollbars */
+
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -181,7 +181,7 @@
   .text-low { color: hsl(var(--low)); }
   .text-success { color: hsl(var(--success)); }
 
-  /* Subtle elevation used sparingly for panels/popovers */
+
   .elevate {
     box-shadow:
       0 1px 2px hsl(var(--shadow-color) / 0.04),

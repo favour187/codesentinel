@@ -15,11 +15,11 @@ import {
 import type { GraphEdge } from '@/twin/graph';
 import type { EdgeType } from '@/db/schema';
 
-/**
- * The graph read layer is pure over an edge list, so these tests construct the
- * edges directly. Database-backed behaviour is covered by the impact, gap and
- * prioritization suites.
- */
+
+
+
+
+
 
 function edge(type: EdgeType, fromKey: string, toKey: string, evidence = 'e'): GraphEdge {
   return {
@@ -43,7 +43,7 @@ describe('edge key vocabulary', () => {
 
   it('does not confuse the forms with one another', () => {
     expect(isFileKey('pkg:react')).toBe(false);
-    // A symbol key still addresses a file in the repository, so it is a file key.
+
     expect(isFileKey('src/a.ts#foo')).toBe(true);
     expect(isSymbolKey('src/a.ts')).toBe(false);
     expect(isRouteKey('db:users')).toBe(false);
@@ -74,10 +74,10 @@ describe('edge key vocabulary', () => {
 });
 
 describe('TwinGraph traversal', () => {
-  /**
-   *   a.ts <- b.ts <- c.ts
-   *        <- d.ts
-   */
+
+
+
+
   const graph = new TwinGraph([
     edge('imports', 'src/b.ts', 'src/a.ts', "imports './a'"),
     edge('imports', 'src/c.ts', 'src/b.ts'),
@@ -133,7 +133,7 @@ describe('TwinGraph traversal', () => {
       edge('imports', 'src/y.ts', 'src/x.ts'),
     ]);
     const reached = cyclic.reachableDependents(['src/x.ts'], { maxDepth: 5, maxNodes: 50 });
-    // y depends on x; x is the origin and is never re-emitted.
+
     expect(reached).toEqual([{ path: 'src/y.ts', depth: 1, via: 'src/x.ts' }]);
   });
 

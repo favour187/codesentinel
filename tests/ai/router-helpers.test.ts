@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { isAIConfigured, parseJsonLoosely, truncate } from '@/ai/router';
 import type { AICompletion, AICompletionRequest, AIProvider } from '@/ai/provider';
 
-/**
- * Pure router helpers. Kept apart from router.test.ts because none of these
- * touch the database, and spinning up a PGlite instance per case there costs
- * seconds for no benefit.
- */
+
+
+
+
+
 
 class Stub implements AIProvider {
   constructor(
@@ -69,7 +69,7 @@ describe('truncate', () => {
 
     expect(result.length).toBeLessThan(text.length);
     expect(result).toContain('truncated');
-    // The last content line must be whole, not cut mid-token.
+
     const body = result.split('\n\n[')[0] ?? '';
     expect(body.endsWith('\n')).toBe(false);
   });

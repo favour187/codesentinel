@@ -4,13 +4,13 @@ import { getDb } from '@/db';
 import { guardianEvents } from '@/db/schema';
 import type { GuardianEventType } from '@/db/schema';
 
-/**
- * Guardian event log.
- *
- * Every notable observation becomes a row. Duplicate events with the same
- * dedupeKey within a repository are ignored (unique index). Nothing here
- * mutates repository code.
- */
+
+
+
+
+
+
+
 
 export interface GuardianEventInput {
   readonly repositoryId: string;
@@ -65,7 +65,7 @@ export async function listEvents(repositoryId: string, limit = 40): Promise<Guar
   return rows.map(toRecord);
 }
 
-/** Events that still apply — expired memory is handled elsewhere. */
+
 export async function findEventByDedupe(
   repositoryId: string,
   dedupeKey: string,

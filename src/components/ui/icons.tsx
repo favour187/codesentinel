@@ -1,12 +1,12 @@
 import type { SVGProps } from 'react';
 
-/**
- * Brand icons.
- *
- * lucide-react removed brand marks (including GitHub) from its icon set, so the
- * official GitHub Octicon path is inlined here rather than pulling in an extra
- * icon dependency. Sized via className like any lucide icon.
- */
+
+
+
+
+
+
+
 export function GitHubIcon({ className, ...props }: SVGProps<SVGSVGElement>) {
   return (
     <svg

@@ -3,7 +3,7 @@ import { getEnv } from '@/lib/env';
 export interface ProviderProbe {
   id: 'groq' | 'featherless';
   configured: boolean;
-  /** Safe to show: prefix + length + last 4. Never the full key. */
+
   fingerprint: string | null;
   looksLikeGroqKey: boolean;
   ok: boolean;

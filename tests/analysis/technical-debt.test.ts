@@ -3,11 +3,11 @@ import { computeTechnicalDebt, isMajorBehind } from '@/analysis/technical-debt';
 import { createTestDb, seedRepository, seedScan } from '../helpers/test-db';
 import type { TestDb } from '../helpers/test-db';
 
-/**
- * Technical debt is a deterministic estimate: every hour traces back to a
- * counted thing. These tests hold the count to that, and check the estimate
- * responds to each contributor independently.
- */
+
+
+
+
+
 
 let db: TestDb;
 let repositoryId: string;
@@ -51,7 +51,7 @@ describe('computeTechnicalDebt', () => {
     const debt = await computeTechnicalDebt(repositoryId);
     const findingDebt = debt.contributors.find((c) => c.id === 'findings');
 
-    // critical (4h) + low (0.5h)
+
     expect(findingDebt?.hours).toBe(4.5);
     expect(findingDebt?.count).toBe(2);
     expect(debt.metrics.openFindings).toBe(2);
@@ -100,8 +100,8 @@ describe('computeTechnicalDebt', () => {
 
     const debt = await computeTechnicalDebt(repositoryId);
 
-    // Only src/uncovered.ts: tiny.ts is below the LOC floor, and the test and
-    // config files are excluded by kind.
+
+
     expect(debt.metrics.untestedSourceFiles).toBe(1);
   });
 
@@ -146,7 +146,7 @@ describe('computeTechnicalDebt', () => {
     });
 
     const debt = await computeTechnicalDebt(repositoryId);
-    // Three of the same rule is systemic; the one-off is not counted.
+
     expect(debt.metrics.recurringFindings).toBe(3);
   });
 

@@ -1,15 +1,15 @@
 #!/bin/sh
-# Production start for 512 MB hosts (Render free).
+
 set -eu
 export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=384 --no-warnings}"
 export NEXT_TELEMETRY_DISABLED="${NEXT_TELEMETRY_DISABLED:-1}"
-# Render sets HOSTNAME to the container name. Next standalone binds that
-# interface and health checks get 502. Always listen on all interfaces.
+
+
 export HOSTNAME=0.0.0.0
 export PORT="${PORT:-3000}"
 
-# Schema is applied on first request via ensureSchema()/bootstrap.
-# Running tsx migrate here regularly OOMs the 512 MB instance before listen.
+
+
 
 if [ -f .next/standalone/server.js ]; then
   mkdir -p .next/standalone/.next

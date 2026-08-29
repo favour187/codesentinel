@@ -4,11 +4,11 @@ import { getFindingById } from '@/ai/context';
 import { analyzeFalsePositive, explainFinding } from '@/ai/tasks/explain-finding';
 import { aiErrorResponse, errorResponse, withRepositoryAccess } from '@/lib/api';
 
-/**
- * Explain a finding, and optionally assess whether it is a false positive.
- *
- * Both are read-only and advisory: nothing here changes a finding's status.
- */
+
+
+
+
+
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,8 +20,8 @@ export async function POST(
 ): Promise<NextResponse> {
   const { id } = await params;
 
-  // The finding is fetched first only to learn which repository to authorise
-  // against; nothing is returned to the caller before the access check.
+
+
   const finding = await getFindingById(id).catch(() => null);
   if (!finding) {
     return NextResponse.json({ ok: false, error: 'Finding not found' }, { status: 404 });

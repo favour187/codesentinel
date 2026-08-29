@@ -11,37 +11,37 @@ import { createFeatherlessProvider } from './providers/featherless';
 import { createGroqProvider } from './providers/groq';
 import { sanitizeRepositoryContent } from './redaction';
 
-/**
- * The single entry point for every AI call in the application.
- *
- * Responsibilities, all of which exist so feature code cannot get them wrong:
- *  - **Provider fallback** — Featherless first, Groq second.
- *  - **Graceful degradation** — when every provider fails the caller gets a
- *    typed "unavailable" result, never an exception that could fail a scan.
- *  - **Redaction** — the assembled prompt passes through the redactor here, so
- *    no feature can bypass it by building its prompt differently.
- *  - **Schema validation** — responses are parsed against a Zod schema; an
- *    invalid response is a failure, not something the UI has to defend against.
- *  - **Caching + logging** — identical evidence is not paid for twice, and
- *    every call is auditable.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const log = createLogger('ai:router');
 
 export interface AITaskRequest<T extends z.ZodTypeAny> {
   readonly task: string;
   readonly schema: T;
-  /** Framing and rules. Written by us, never from repository content. */
+
   readonly system: string;
-  /** The evidence block. Treated as untrusted data and redacted. */
+
   readonly user: string;
   readonly repositoryId?: string | null;
   readonly findingId?: string | null;
-  /** Paths / ids / SHAs that grounded this call, for the activity log. */
+
   readonly evidenceSources?: readonly string[];
   readonly maxTokens?: number;
   readonly temperature?: number;
-  /** Skip the cache — used by an explicit "Regenerate" action. */
+
   readonly noCache?: boolean;
   readonly signal?: AbortSignal;
 }
@@ -50,7 +50,7 @@ export type AIResult<T> =
   | { readonly ok: true; readonly data: T; readonly provider: string; readonly model: string; readonly cached: boolean }
   | { readonly ok: false; readonly reason: 'unavailable' | 'failed' | 'invalid'; readonly message: string };
 
-/** Overridable for tests; production resolves from environment configuration. */
+
 export interface RouterOptions {
   readonly providers?: readonly AIProvider[];
 }
@@ -63,12 +63,12 @@ export function isAIConfigured(providers?: readonly AIProvider[]): boolean {
   return (providers ?? defaultProviders()).some((p) => p.isAvailable());
 }
 
-/**
- * Run an AI task end to end.
- *
- * Never throws for an AI-side problem. Callers get `ok: false` and decide how
- * to degrade, which is what keeps "AI is down" from ever meaning "scan failed".
- */
+
+
+
+
+
+
 export async function runAITask<T extends z.ZodTypeAny>(
   request: AITaskRequest<T>,
   options: RouterOptions = {},
@@ -79,14 +79,14 @@ export async function runAITask<T extends z.ZodTypeAny>(
 
   if (available.length === 0) {
     log.debug('AI task skipped: no provider configured', { task: request.task });
-    // Not logged to the ledger: nothing was attempted and nothing was spent.
+
     return { ok: false, reason: 'unavailable', message: 'No AI provider is configured.' };
   }
 
-  /*
-   * Redact before anything else. Truncation happens first so the limit applies
-   * to what we intended to send, then redaction runs over the final text.
-   */
+
+
+
+
   const truncated = truncate(request.user, env.AI_MAX_CONTEXT_CHARS);
   const sanitized = sanitizeRepositoryContent(truncated);
   const evidenceSources = [...(request.evidenceSources ?? [])];
@@ -112,8 +112,8 @@ export async function runAITask<T extends z.ZodTypeAny>(
           cached: true,
         };
       }
-      // A cached row that no longer matches the schema (shape changed between
-      // releases) is ignored rather than trusted.
+
+
     }
   }
 
@@ -190,11 +190,11 @@ export async function runAITask<T extends z.ZodTypeAny>(
     }
   }
 
-  /*
-   * Everything failed. Distinguish "the model kept producing unusable output"
-   * from "we could not reach a provider": the first is a quality problem worth
-   * surfacing differently from an outage.
-   */
+
+
+
+
+
   const invalidOnly = attempts.every((a) => /schema validation failed|not valid JSON/.test(a.error));
   const reason = invalidOnly && attempts.length > 0 ? 'invalid' : 'failed';
 
@@ -234,17 +234,17 @@ export async function runAITask<T extends z.ZodTypeAny>(
   };
 }
 
-/* -------------------------------------------------------------------------- */
-/* Helpers                                                                    */
-/* -------------------------------------------------------------------------- */
 
-/**
- * Trim oversized evidence at a line boundary.
- *
- * Cutting mid-line produces a syntactically broken fragment that the model
- * then reasons about incorrectly; the marker tells it the view is partial so
- * it does not conclude that something simply is not there.
- */
+
+
+
+
+
+
+
+
+
+
 export function truncate(text: string, limit: number): string {
   if (text.length <= limit) return text;
   const clipped = text.slice(0, limit);
@@ -253,13 +253,13 @@ export function truncate(text: string, limit: number): string {
   return `${body}\n\n[... evidence truncated to fit the context budget ...]`;
 }
 
-/**
- * Parse a JSON object out of a completion.
- *
- * Even with `response_format: json_object`, models wrap output in prose or a
- * markdown fence often enough that being strict here would fail calls that
- * actually returned the right data.
- */
+
+
+
+
+
+
+
 export function parseJsonLoosely(text: string): unknown {
   const trimmed = text.trim();
 
@@ -311,7 +311,7 @@ async function readCache(
     const row = rows[0];
     return row?.response ? { response: row.response, provider: row.provider, model: row.model } : null;
   } catch (error: unknown) {
-    // A cache miss must never break the feature.
+
     log.warn('AI cache read failed', { message: (error as Error).message });
     return null;
   }
@@ -324,7 +324,7 @@ async function writeLog(row: LogRow): Promise<void> {
     const db = await getDb();
     await db.insert(aiRequests).values(row);
   } catch (error: unknown) {
-    // Logging is observability, not correctness. Never fail a task over it.
+
     log.warn('AI activity log write failed', { message: (error as Error).message });
   }
 }

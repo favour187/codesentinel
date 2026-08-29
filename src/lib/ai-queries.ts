@@ -3,14 +3,14 @@ import { getDb } from '@/db';
 import { aiRequests } from '@/db/schema';
 import type { AIRequestStatus } from '@/db/schema';
 
-/**
- * Items 14 and 15: AI usage accounting and the activity log.
- *
- * The ledger records what was asked for, who answered, how long it took and
- * what grounded the answer — never the prompt itself and never a response
- * containing raw repository text beyond the validated structured output. That
- * boundary is enforced at write time in the router; this module only reads.
- */
+
+
+
+
+
+
+
+
 
 export interface AIActivityEntry {
   readonly id: string;
@@ -65,11 +65,11 @@ export interface AIUsageStats {
   readonly totalCompletionTokens: number;
   readonly byProvider: ReadonlyArray<{ provider: string; count: number; failures: number }>;
   readonly byTask: ReadonlyArray<{ task: string; count: number }>;
-  /** Fallbacks that actually occurred — the primary failed and a backup answered. */
+
   readonly fallbackCount: number;
 }
 
-/** Usage over a trailing window. Defaults to 30 days. */
+
 export async function getAIUsageStats(repositoryId: string, sinceDays = 30): Promise<AIUsageStats> {
   const db = await getDb();
   const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000);
@@ -113,7 +113,7 @@ export async function getAIUsageStats(repositoryId: string, sinceDays = 30): Pro
       byProvider.set(row.provider, entry);
     }
 
-    // Every recorded attempt is a provider that failed before this one.
+
     for (const attempt of row.attempts) {
       const entry = byProvider.get(attempt.provider) ?? { count: 0, failures: 0 };
       entry.failures += 1;
@@ -138,7 +138,7 @@ export async function getAIUsageStats(repositoryId: string, sinceDays = 30): Pro
   };
 }
 
-/** Cached explanation for a finding, if one was already produced. */
+
 export async function getCachedResponse(findingId: string, task: string): Promise<Record<string, unknown> | null> {
   const db = await getDb();
   const [row] = await db
@@ -151,7 +151,7 @@ export async function getCachedResponse(findingId: string, task: string): Promis
   return row?.response ?? null;
 }
 
-/** Requests in the current hour, for rate limiting. */
+
 export async function countRecentRequests(repositoryId: string, withinMinutes = 60): Promise<number> {
   const db = await getDb();
   const since = new Date(Date.now() - withinMinutes * 60 * 1000);

@@ -2,15 +2,15 @@ import { Brain, CircleHelp, Lightbulb, ShieldCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-/**
- * Item 17: every AI conclusion is labelled with how it was arrived at.
- *
- * A developer acting on this output needs to know which parts are read
- * straight from the scan (FACT), which are the model reasoning (INFERENCE),
- * and which are suggestions (RECOMMENDATION). Presenting all three in the same
- * voice is what makes AI output untrustworthy, so the distinction is a
- * first-class part of the UI rather than a disclaimer at the bottom.
- */
+
+
+
+
+
+
+
+
+
 
 export type Confidence = 'high' | 'medium' | 'low';
 export type ClaimKind = 'FACT' | 'INFERENCE' | 'RECOMMENDATION';
@@ -79,13 +79,13 @@ export function ClaimList({ claims }: { claims: ReadonlyArray<{ kind: ClaimKind;
   );
 }
 
-/**
- * The provenance footer shown under every AI-generated block.
- *
- * Always states the model, because "which model said this" changes how much
- * weight the reader should give it, and because swapping providers must be
- * visible to the user rather than silent.
- */
+
+
+
+
+
+
+
 export function AIDisclosure({
   confidence,
   provider,
@@ -119,13 +119,13 @@ export function AIDisclosure({
   );
 }
 
-/**
- * Shown wherever an AI feature is offered but no provider is configured.
- *
- * States plainly that the deterministic product is unaffected — the point of
- * the whole degradation design is that a missing API key is a reduced feature
- * set, not a broken tool.
- */
+
+
+
+
+
+
+
 export function AIUnavailableNotice({ className }: { className?: string }) {
   return (
     <div

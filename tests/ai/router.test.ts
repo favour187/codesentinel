@@ -8,17 +8,17 @@ import type { AICompletion, AICompletionRequest, AIProvider } from '@/ai/provide
 import { createTestDb, seedRepository } from '../helpers/test-db';
 import type { TestDb } from '../helpers/test-db';
 
-/**
- * Router tests: provider fallback, graceful degradation, schema validation,
- * caching and the activity ledger.
- *
- * These encode the guarantee the whole feature rests on — an AI problem is
- * never allowed to become an application failure.
- */
+
+
+
+
+
+
+
 
 const TestSchema = z.object({ answer: z.string(), confidence: z.enum(['high', 'medium', 'low']) });
 
-/** A provider whose behaviour each test dictates exactly. */
+
 class StubProvider implements AIProvider {
   readonly calls: AICompletionRequest[] = [];
 
@@ -97,7 +97,7 @@ describe('runAITask', () => {
     expect(result.model).toBe('llama-primary');
     expect(result.cached).toBe(false);
 
-    // The fallback must not be touched when the primary succeeds.
+
     expect(fallback.calls).toHaveLength(0);
   });
 
@@ -158,7 +158,7 @@ describe('runAITask', () => {
     expect(result.reason).toBe('unavailable');
     expect(unconfigured.calls).toHaveLength(0);
 
-    // Nothing was attempted, so nothing should be billed to the ledger.
+
     const rows = await db.select().from(aiRequests);
     expect(rows).toHaveLength(0);
   });
@@ -193,7 +193,7 @@ describe('runAITask', () => {
     expect(row).toBeDefined();
     expect(row?.redactedKinds.length).toBeGreaterThan(0);
 
-    // The ledger row must have no column carrying the prompt text.
+
     const serialized = JSON.stringify(row);
     expect(serialized).not.toContain('AKIAIOSFODNN7EXAMPLE');
   });
@@ -249,7 +249,7 @@ describe('runAITask', () => {
     if (!second.ok) throw new Error('expected success');
     expect(second.cached).toBe(true);
 
-    // The whole point: no second provider call, so no second charge.
+
     expect(primary.calls).toHaveLength(1);
   });
 

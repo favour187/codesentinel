@@ -6,18 +6,18 @@ import { CONFIDENCE_HINT, promptSchemaHint, PullRequestReview } from '../schemas
 import { buildUserMessage, systemPrompt } from '../prompt';
 import { getMemory } from '../context';
 
-/**
- * Item 5: AI review of a pull request.
- *
- * Runs *after* deterministic scanning and receives a compact structured
- * summary rather than the diff. Two reasons: a large diff would blow the
- * context budget on code the scanners have already analysed, and grounding the
- * review in the findings keeps the AI commenting on measured facts instead of
- * offering style opinions nobody asked for.
- *
- * The recommendation is advisory. The Check Run conclusion is decided by
- * policy and deterministic severity, never by this.
- */
+
+
+
+
+
+
+
+
+
+
+
+
 
 export interface PullRequestReviewInput {
   readonly repositoryId: string;
@@ -27,7 +27,7 @@ export interface PullRequestReviewInput {
   readonly author: string | null;
   readonly risk: PullRequestRisk;
   readonly changedFiles: ReadonlyArray<{ path: string; additions: number; deletions: number; status: string }>;
-  /** Dependency additions/removals detected in this PR. */
+
   readonly dependencyChanges?: readonly string[];
 }
 
@@ -161,8 +161,8 @@ function renderFindings(findings: readonly Finding[]): string {
   if (findings.length === 0) return 'No new findings were introduced.';
 
   const listed = findings.slice(0, MAX_LISTED_FINDINGS).map((f) => {
-    // Secret findings never have their evidence forwarded, even redacted:
-    // this text can end up in a public pull request comment.
+
+
     const isSecret = f.category === 'secrets' || f.ruleId.startsWith('secret/');
     const location = f.filePath ? `${f.filePath}${f.lineStart ? `:${f.lineStart}` : ''}` : 'repository-wide';
     return [
@@ -185,12 +185,12 @@ function sum(values: readonly number[]): number {
   return values.reduce((a, b) => a + b, 0);
 }
 
-/**
- * Render the AI review as a compact Markdown section for the PR comment.
- *
- * Explicitly labelled as AI-generated and advisory, and placed after the
- * deterministic results so the measured facts are what a reviewer reads first.
- */
+
+
+
+
+
+
 export function renderReviewMarkdown(review: PullRequestReview, model: string): string {
   const recommendationLabel: Record<PullRequestReview['recommendation'], string> = {
     APPROVE: '✅ Approve',

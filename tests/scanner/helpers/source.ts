@@ -3,7 +3,7 @@ import { summarizeFiles, type RepositoryStats } from '@/scanner/discovery';
 import { OfflineAdvisoryProvider } from '@/scanner/providers/vulnerability-provider';
 import type { Finding, ScanContext, SourceFile } from '@/scanner/types';
 
-/** Builds an in-memory SourceFile so rule tests never touch the filesystem. */
+
 export function sourceFile(path: string, content: string, overrides: Partial<SourceFile> = {}): SourceFile {
   const lines = content.split('\n');
   return {
@@ -53,7 +53,7 @@ export function scanContext(files: SourceFile[], overrides: Partial<ScanContext>
   };
 }
 
-/** Convenience: run a scanner over a single synthetic file. */
+
 export async function scanSource(
   scanner: { scan(ctx: ScanContext): Promise<Finding[]> },
   path: string,

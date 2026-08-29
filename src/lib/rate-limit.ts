@@ -1,9 +1,9 @@
-/**
- * In-process rate limiter.
- *
- * Enough to blunt accidental loops and naive abuse on a single Render instance.
- * Not a distributed limiter — correctness never depends on it.
- */
+
+
+
+
+
+
 
 interface Bucket {
   count: number;

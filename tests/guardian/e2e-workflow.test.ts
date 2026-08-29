@@ -1,19 +1,19 @@
-/**
- * END-TO-END GUARDIAN WORKFLOW
- *
- * The other guardian suites test each stage in isolation with the neighbouring
- * stage stubbed. This one wires the real pieces together and asserts the whole
- * path a real delivery takes:
- *
- *   signed webhook -> route -> delivery ledger -> scan_jobs -> worker
- *     -> tarball checkout -> deterministic scanners -> findings persisted
- *     -> risk assessed -> GitHub Check run -> sticky PR comment
- *
- * Nothing about the pipeline is mocked. The only substitution is `fetch`: a
- * fake GitHub that serves a real gzipped tarball built from the bundled
- * vulnerable fixture and records the Check/comment calls the guardian makes.
- * That is the one thing we genuinely cannot exercise without credentials.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, cpSync, mkdirSync } from 'node:fs';
@@ -39,7 +39,7 @@ let repositoryId: string;
 let tarballGz: Buffer;
 let workDir: string;
 
-/** Calls the fake GitHub recorded, so we can assert what the guardian sent. */
+
 interface Recorded {
   checkRuns: Array<{ method: string; body: Record<string, unknown> }>;
   comments: Array<{ method: string; body: Record<string, unknown> }>;
@@ -57,7 +57,7 @@ vi.mock('@/db', async () => {
   };
 });
 
-/** Build a GitHub-shaped tarball: everything nested under one wrapper dir. */
+
 function buildFixtureTarball(): Buffer {
   const staging = mkdtempSync(join(tmpdir(), 'cs-e2e-stage-'));
   const wrapper = join(staging, `${OWNER}-${REPO}-${HEAD_SHA.slice(0, 7)}`);
@@ -81,12 +81,12 @@ function fakeGitHub(): typeof fetch {
     const json = (payload: unknown, status = 200): Response =>
       new Response(JSON.stringify(payload), { status, headers: { 'content-type': 'application/json' } });
 
-    // Installation token exchange.
+
     if (url.includes('/access_tokens')) {
       return json({ token: 'ghs_faketoken', expires_at: new Date(Date.now() + 3600_000).toISOString() }, 201);
     }
 
-    // Tarball download.
+
     if (url.includes('/tarball/')) {
       recorded.tarballRequests++;
       return new Response(new Uint8Array(tarballGz), {
@@ -95,7 +95,7 @@ function fakeGitHub(): typeof fetch {
       });
     }
 
-    // PR metadata — the worker re-reads this rather than trusting the payload.
+
     if (/\/pulls\/\d+$/.test(url) && method === 'GET') {
       return json({
         number: 42,
@@ -106,7 +106,7 @@ function fakeGitHub(): typeof fetch {
       });
     }
 
-    // Changed files.
+
     if (url.includes('/pulls/42/files')) {
       return json([
         { filename: 'admin.js', status: 'modified', additions: 30, deletions: 2, changes: 32 },
@@ -241,24 +241,24 @@ const prPayload = {
 
 describe('guardian end-to-end: pull request', () => {
   it('carries a signed delivery all the way to a Check run and a PR comment', async () => {
-    /* 1. Delivery arrives. */
+
     const response = await postWebhook('pull_request', prPayload, 'delivery-e2e-1');
     expect(response.status).toBe(200);
 
-    /* 2. It is recorded in the ledger — and the raw payload is NOT stored. */
+
     const deliveries = await db.select().from(schema.webhookDeliveries);
     expect(deliveries).toHaveLength(1);
     expect(deliveries[0]!.deliveryId).toBe('delivery-e2e-1');
     expect(deliveries[0]!.event).toBe('pull_request');
     expect(JSON.stringify(deliveries[0])).not.toContain('feature/admin');
 
-    /* 3. A job is queued. */
+
     const queued = await db.select().from(schema.scanJobs);
     expect(queued).toHaveLength(1);
     expect(queued[0]!.status).toBe('queued');
     expect(queued[0]!.pullRequestNumber).toBe(42);
 
-    /* 4. The worker drains it against the fake GitHub. */
+
     const { runWorker } = await import('@/guardian/worker');
     const { GitHubClient } = await import('@/github/client');
 
@@ -270,7 +270,7 @@ describe('guardian end-to-end: pull request', () => {
     expect(result.failed, JSON.stringify(result.jobs)).toBe(0);
     expect(result.succeeded).toBe(1);
 
-    /* 5. Real scanners ran over the real tarball. */
+
     expect(recorded.tarballRequests).toBeGreaterThan(0);
 
     const scanRows = await db.select().from(schema.scans).where(eq(schema.scans.repositoryId, repositoryId));
@@ -281,14 +281,14 @@ describe('guardian end-to-end: pull request', () => {
     const findings = await db.select().from(schema.findings).where(eq(schema.findings.scanId, prScan!.id));
     expect(findings.length).toBeGreaterThan(10);
 
-    // Findings point at files that genuinely exist in the fixture.
+
     expect(findings.every((f) => typeof f.filePath === 'string' && f.filePath!.length > 0)).toBe(true);
 
-    /*
-     * A pull request scan must be fully attributable but must never speak for
-     * the tracked branch: every row is `proposed`, and the repository-level
-     * `open` set stays empty because no branch scan has run in this test.
-     */
+
+
+
+
+
     expect(findings.every((f) => f.status === 'proposed')).toBe(true);
     const openForRepo = await db
       .select()
@@ -296,35 +296,35 @@ describe('guardian end-to-end: pull request', () => {
       .where(and(eq(schema.findings.repositoryId, repositoryId), eq(schema.findings.status, 'open')));
     expect(openForRepo).toHaveLength(0);
 
-    // ...and a PR scan must not move the repository's health score.
+
     const prSnapshots = await db
       .select()
       .from(schema.healthSnapshots)
       .where(eq(schema.healthSnapshots.repositoryId, repositoryId));
     expect(prSnapshots).toHaveLength(0);
 
-    /* 6. Risk was assessed and stored. */
+
     const prRows = await db.select().from(schema.pullRequests).where(eq(schema.pullRequests.repositoryId, repositoryId));
     expect(prRows).toHaveLength(1);
     expect(prRows[0]!.number).toBe(42);
     expect(['low', 'medium', 'high', 'critical']).toContain(prRows[0]!.riskLevel);
 
-    /* 7. A Check run was created and completed. */
+
     expect(recorded.checkRuns.length).toBeGreaterThanOrEqual(1);
     const completed = recorded.checkRuns.find((c) => c.body.conclusion !== undefined);
     expect(completed, 'expected a completed check run').toBeDefined();
     expect(['failure', 'neutral', 'success', 'action_required']).toContain(completed!.body.conclusion);
 
-    /* 8. Exactly one PR comment, carrying the sticky marker. */
+
     expect(recorded.comments).toHaveLength(1);
     const commentBody = String(recorded.comments[0]!.body.body ?? '');
     expect(commentBody).toContain('<!-- codesentinel:guardian-report -->');
 
-    /* 9. The fixture's hardcoded secrets must not leak into GitHub. */
+
     expect(commentBody).not.toMatch(/sk_live_[A-Za-z0-9]/);
     expect(commentBody).not.toMatch(/AKIA[0-9A-Z]{16}/);
 
-    /* 10. The job is closed out. */
+
     const doneJobs = await db.select().from(schema.scanJobs);
     expect(doneJobs[0]!.status).toBe('completed');
     expect(doneJobs[0]!.scanId).toBe(prScan!.id);
@@ -376,13 +376,13 @@ describe('guardian end-to-end: push', () => {
       .from(schema.healthSnapshots)
       .where(eq(schema.healthSnapshots.repositoryId, repositoryId));
     expect(snapshots).toHaveLength(1);
-    // The fixture is deliberately awful; a perfect score would mean the
-    // scanners never actually read it.
+
+
     expect(Number(snapshots[0]!.health)).toBeLessThan(90);
 
     const findings = await db.select().from(schema.findings).where(eq(schema.findings.scanId, pushScan!.id));
     expect(findings.length).toBeGreaterThan(10);
-    // A default-branch scan owns the repository's live state.
+
     expect(findings.every((f) => f.status === 'open')).toBe(true);
   }, 120_000);
 

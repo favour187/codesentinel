@@ -4,25 +4,25 @@ import { scanJobs } from '@/db/schema';
 import type { JobStatus } from '@/db/schema';
 import { createLogger } from '@/lib/logger';
 
-/**
- * Durable scan queue backed by the `scan_jobs` table.
- *
- * Why a table and not an in-memory queue: a webhook must reply to GitHub within
- * seconds, but a scan takes far longer, so the work has to outlive the request.
- * On serverless the process may be frozen the moment the response is sent, so
- * queued work must be recoverable by whatever runs next — an in-memory array
- * would silently drop scans on every cold start.
- *
- * Claiming uses a single atomic UPDATE..WHERE id IN (SELECT ... ) so two
- * concurrent workers can never run the same job.
- */
+
+
+
+
+
+
+
+
+
+
+
+
 
 const log = createLogger('guardian:jobs');
 
-/** A job locked longer than this is presumed dead and may be reclaimed. */
+
 export const LOCK_TIMEOUT_MS = 15 * 60 * 1000;
 
-/** Priorities: interactive work first, background sweeps last. */
+
 export const PRIORITY = {
   manual: 100,
   pull_request: 80,
@@ -63,14 +63,14 @@ function priorityFor(trigger: string, explicit?: number): number {
   return PRIORITY[trigger as keyof typeof PRIORITY] ?? 50;
 }
 
-/**
- * Enqueue a scan.
- *
- * Deduplicates against an existing queued job for the same (repository, ref,
- * commit, PR): pushing three commits in ten seconds should not queue three
- * identical scans of the same head. A job already *running* does not block a
- * new enqueue, because the new commit genuinely needs its own scan.
- */
+
+
+
+
+
+
+
+
 export async function enqueueScan(input: EnqueueScanInput): Promise<ScanJob> {
   const db = await getDb();
 
@@ -119,12 +119,12 @@ export async function enqueueScan(input: EnqueueScanInput): Promise<ScanJob> {
   return toJob(row);
 }
 
-/**
- * Atomically claim the next runnable job.
- *
- * Reclaims jobs whose lock has expired (worker crashed mid-scan) so work is
- * never permanently stuck. Returns null when the queue is empty.
- */
+
+
+
+
+
+
 export async function claimNextJob(workerId: string): Promise<ScanJob | null> {
   const db = await getDb();
   const staleBefore = new Date(Date.now() - LOCK_TIMEOUT_MS);
@@ -144,9 +144,9 @@ export async function claimNextJob(workerId: string): Promise<ScanJob | null> {
   const candidate = candidates[0];
   if (!candidate) return null;
 
-  // The status guard in the WHERE clause is the concurrency control: if another
-  // worker claimed this row between the SELECT and the UPDATE, zero rows match
-  // and we return null rather than double-running the scan.
+
+
+
   const claimed = await db
     .update(scanJobs)
     .set({
@@ -191,14 +191,14 @@ export async function completeJob(jobId: string, scanId: string | null): Promise
     .where(eq(scanJobs.id, jobId));
 }
 
-/**
- * Record a failure.
- *
- * Requeues while attempts remain so a transient GitHub outage does not lose the
- * scan; gives up at `maxAttempts` so a genuinely broken repository does not spin
- * forever. The error text is always stored — a silently failing scan is worse
- * than a visibly failing one.
- */
+
+
+
+
+
+
+
+
 export async function failJob(jobId: string, error: string): Promise<{ requeued: boolean }> {
   const db = await getDb();
   const rows = await db.select().from(scanJobs).where(eq(scanJobs.id, jobId)).limit(1);

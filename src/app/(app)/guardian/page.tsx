@@ -38,14 +38,14 @@ const RISK_VARIANT: Record<Severity, 'critical' | 'high' | 'medium' | 'low' | 'i
   info: 'info',
 };
 
-/**
- * Guardian — the continuous-scanning control room.
- *
- * Ordered by what a developer needs first: is the guardian actually connected
- * and receiving events, which pull requests are risky right now, and what is
- * the automation doing. Everything shown here comes from recorded webhook
- * deliveries and real scans; nothing is simulated.
- */
+
+
+
+
+
+
+
+
 export default async function GuardianPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
@@ -97,8 +97,8 @@ export default async function GuardianPage() {
             <TestGuardianButton />
             {!repo.isDemo && !connection.guardianEnabled ? <EnableGuardianButton repositoryId={repo.id} /> : null}
             {repo.isDemo ? <Badge variant="medium">Demo fixture</Badge> : null}
-            {/* A demo repository has no event source, so "Paused" would read as
-                a fault rather than the accurate "this never applied". */}
+            {
+}
             {connection.source === 'demo' ? (
               <Badge variant="outline">
                 <Radar className="size-3" aria-hidden="true" />
@@ -144,7 +144,7 @@ export default async function GuardianPage() {
         </Card>
       ) : null}
 
-      {/* Connection state first: everything below is meaningless if events never arrive. */}
+      {}
       <div className="mt-6">
       <ConnectionBanner
         installed={connection.installed}
@@ -270,7 +270,7 @@ export default async function GuardianPage() {
   );
 }
 
-/* -------------------------------------------------------------------------- */
+
 
 function ConnectionBanner({
   installed,
@@ -470,7 +470,7 @@ function DeliveryRow({ delivery }: { delivery: WebhookDeliverySummary }) {
             <span className="text-[hsl(var(--muted-foreground))]">.{delivery.action}</span>
           ) : null}
         </p>
-        {/* The reason an event was ignored is the whole point of this log. */}
+        {}
         {delivery.message ? (
           <p className="mt-0.5 break-words text-xs text-[hsl(var(--muted-foreground))]" title={delivery.message}>
             {delivery.message}

@@ -3,24 +3,24 @@ import { cookies } from 'next/headers';
 import { getEnv } from '@/lib/env';
 import { createLogger } from '@/lib/logger';
 
-/**
- * Stateless, signed session cookies (JWS / HS256).
- *
- * The cookie holds only an opaque user id + login. GitHub tokens never leave
- * the database (and are encrypted there), so a stolen cookie cannot be replayed
- * against the GitHub API outside this app.
- */
+
+
+
+
+
+
+
 
 const log = createLogger('auth:session');
 
 export const SESSION_COOKIE = 'codesentinel_session';
-const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 const ISSUER = 'codesentinel';
 
 export interface SessionPayload {
   userId: string;
   login: string;
-  /** True for the local demo session (no GitHub account attached). */
+
   demo?: boolean;
 }
 
@@ -61,7 +61,7 @@ export function sessionCookieOptions(maxAge: number = SESSION_TTL_SECONDS) {
   };
 }
 
-/** Read + verify the session from the incoming request cookies. */
+
 export async function getSession(): Promise<SessionPayload | null> {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;

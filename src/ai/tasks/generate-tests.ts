@@ -6,13 +6,13 @@ import { buildUserMessage, systemPrompt } from '../prompt';
 import { collectFindingEvidence } from './explain-finding';
 import { detectTestFramework, getTestsCovering } from '../context';
 
-/**
- * Item 4: regression test generation.
- *
- * Generated tests are *proposals*. CodeSentinel never claims they pass — it
- * has not run them. The UI says "generated, not yet run", and the demo flow
- * only reports a pass after the developer actually executes them.
- */
+
+
+
+
+
+
+
 
 const TESTS_HINT = promptSchemaHint({
   framework: 'string — the test framework, exactly as given in the evidence',
@@ -25,7 +25,7 @@ const TESTS_HINT = promptSchemaHint({
 
 export interface TestGenerationOptions extends RouterOptions {
   readonly noCache?: boolean;
-  /** Include the proposed fix so the test targets the fixed behaviour. */
+
   readonly fixedCode?: string;
 }
 
@@ -39,11 +39,11 @@ export async function generateTestsForFinding(
   const { finding } = evidence;
   const framework = await detectTestFramework(finding.repositoryId);
 
-  /*
-   * Without a detected framework we would be guessing between Jest, Vitest,
-   * Mocha and Pytest — and a test file in the wrong framework is worse than
-   * none, because it fails for reasons unrelated to the code.
-   */
+
+
+
+
+
   if (!framework) {
     return {
       ok: false,
@@ -59,12 +59,12 @@ export async function generateTestsForFinding(
 
   const existingTests = finding.filePath ? await getTestsCovering(finding.repositoryId, finding.filePath) : [];
 
-  /*
-   * An existing test file is the single most useful piece of context: it shows
-   * the import style, the helpers, the assertion library and the naming the
-   * project actually uses, so the generated file fits in instead of merely
-   * being valid.
-   */
+
+
+
+
+
+
   if (existingTests[0]) {
     const example = await readRepositoryFile(finding.repositoryId, existingTests[0]);
     if (example) {

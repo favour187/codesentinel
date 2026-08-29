@@ -10,16 +10,16 @@ import { GitHubClient } from '@/github/client';
 import { isGitHubAppConfigured } from '@/github/app-auth';
 import { createLogger } from '@/lib/logger';
 
-/**
- * Scan worker: drains the `scan_jobs` queue.
- *
- * Runs in-process, triggered by an API call (`POST /api/guardian/run`) that a
- * cron job, a Vercel Cron, or the UI can hit. Not a daemon: on serverless there
- * is no long-lived process to host one, and a queue that is drained on demand
- * behaves identically as long as something calls it regularly.
- *
- * Every job is isolated — one repository failing must never stop the queue.
- */
+
+
+
+
+
+
+
+
+
+
 
 const log = createLogger('guardian:worker');
 
@@ -31,12 +31,12 @@ export interface WorkerResult {
 }
 
 export interface RunWorkerOptions {
-  /** Stop after this many jobs so an HTTP-triggered run stays bounded. */
+
   maxJobs?: number;
-  /** Wall-clock budget; the worker stops claiming new jobs past it. */
+
   budgetMs?: number;
   workerId?: string;
-  /** Injected for tests — lets the whole pipeline run against a fake GitHub. */
+
   clientFactory?: (installationId: number) => Promise<GitHubClient>;
 }
 
@@ -128,13 +128,13 @@ async function processJob(
   return `Branch scan: ${outcome.findings} finding(s), health ${outcome.health}`;
 }
 
-/**
- * Load a repository plus GitHub's NUMERIC installation id.
- *
- * `repositories.installation_id` is a FK to our own `installations` row, not
- * the id GitHub's API expects, so the join is required — passing the UUID to
- * the token endpoint would 404 on every scan.
- */
+
+
+
+
+
+
+
 async function loadRepositoryRef(repositoryId: string): Promise<RepositoryRef | null> {
   const db = await getDb();
   const rows = await db
@@ -177,13 +177,13 @@ interface PullRequestRefs {
   authorLogin: string | null;
 }
 
-/**
- * Re-read the PR from the API rather than trusting the webhook payload.
- *
- * By the time the worker runs, the PR may have been updated — using a stale sha
- * would post a report against a commit that is no longer the head, and GitHub
- * would attach the check to the wrong place.
- */
+
+
+
+
+
+
+
 async function fetchPullRequestRefs(
   client: GitHubClient,
   repository: RepositoryRef,

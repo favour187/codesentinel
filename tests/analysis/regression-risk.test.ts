@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { assessRegressionRisk, riskBand } from '@/analysis/regression-risk';
 import type { RegressionRiskInput } from '@/analysis/regression-risk';
 
-/**
- * The regression risk model is deterministic and documented, so it is tested
- * as arithmetic: the same input must always give the same score, and every
- * factor must move the score in the direction its documentation claims.
- */
+
+
+
+
+
 
 function input(overrides: Partial<RegressionRiskInput> = {}): RegressionRiskInput {
   return {

@@ -9,13 +9,13 @@ export const dynamic = 'force-dynamic';
 
 const log = createLogger('api:repositories:demo');
 
-/**
- * Register the bundled demo fixture as a repository.
- *
- * The fixture is a REAL local repository of intentionally vulnerable code that
- * the real scanners analyse. It is stored with `source: 'demo'` so the UI can
- * always distinguish it from production GitHub analysis.
- */
+
+
+
+
+
+
+
 export async function POST(): Promise<NextResponse> {
   try {
     const user = await requireUser();

@@ -1,13 +1,13 @@
 import { getDb } from '@/db';
 import { notifications } from '@/db/schema';
 
-/**
- * Provider-independent notifications.
- *
- * The only built-in sink is the in-app `notifications` table. Additional
- * providers implement `NotificationSink` and register here — nothing in
- * Guardian imports Slack, email or GitHub for this purpose.
- */
+
+
+
+
+
+
+
 
 export interface NotificationMessage {
   readonly repositoryId: string;

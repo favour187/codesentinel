@@ -81,7 +81,7 @@ describe('assessPullRequestRisk — findings drive risk', () => {
     const levels = (['info', 'low', 'medium', 'high', 'critical'] as Severity[]).map(
       (s) => assess({ newFindings: [finding(s)] }).score,
     );
-    // Monotonically non-decreasing across severities.
+
     for (let i = 1; i < levels.length; i++) {
       expect(levels[i]!).toBeGreaterThanOrEqual(levels[i - 1]!);
     }
@@ -90,7 +90,7 @@ describe('assessPullRequestRisk — findings drive risk', () => {
   it('damps repeated findings of the same severity rather than scaling linearly', () => {
     const one = assess({ newFindings: [finding('medium')] });
     const nine = assess({ newFindings: Array.from({ length: 9 }, () => finding('medium')) });
-    // 9x the findings must not be 9x the points.
+
     expect(nine.score).toBeGreaterThan(one.score);
     expect(nine.score).toBeLessThan(one.score * 9);
   });
@@ -117,7 +117,7 @@ describe('assessPullRequestRisk — blocking policy', () => {
   });
 
   it('blocks a single critical even inside an otherwise tiny clean diff', () => {
-    // The aggregate score must never average a critical away.
+
     const risk = assess({
       files: [file('src/config.ts', 2)],
       newFindings: [finding('critical')],
@@ -278,7 +278,7 @@ describe('assessPullRequestRisk — explainability', () => {
   });
 
   it('never labels a blocked pull request as low risk', () => {
-    // A blocking check and a "low risk" label must not contradict each other.
+
     const risk = assess({ newFindings: [finding('critical')], failOnSeverity: 'high' });
     expect(risk.shouldBlock).toBe(true);
     expect(risk.level).toBe('critical');

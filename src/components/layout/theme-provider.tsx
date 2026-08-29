@@ -13,11 +13,11 @@ interface ThemeContextValue {
 const ThemeContext = React.createContext<ThemeContextValue | null>(null);
 const STORAGE_KEY = 'codesentinel-theme';
 
-/**
- * Dependency-free theme provider (no next-themes needed).
- * The inline script in layout.tsx applies the class before paint, so there is
- * no flash of incorrect theme.
- */
+
+
+
+
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = React.useState<Theme>('system');
   const [resolved, setResolved] = React.useState<'light' | 'dark'>('dark');
@@ -61,7 +61,7 @@ export function useTheme(): ThemeContextValue {
   return ctx;
 }
 
-/** Blocking script that prevents a flash of the wrong theme. */
+
 export const THEME_SCRIPT = `
 (function(){try{
   var s=localStorage.getItem('${STORAGE_KEY}')||'system';

@@ -36,8 +36,8 @@ describe('createFinding', () => {
   });
 
   it('ignores line numbers in the fingerprint', () => {
-    // Unrelated edits shift line numbers. If the fingerprint moved with them,
-    // every reformat would look like "old issue resolved, new issue found".
+
+
     expect(make({ lineStart: 10 }).fingerprint).toBe(make({ lineStart: 250 }).fingerprint);
   });
 

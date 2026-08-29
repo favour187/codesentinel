@@ -14,11 +14,11 @@ interface AppShellProps {
   children: React.ReactNode;
 }
 
-/**
- * Application chrome: navigation rail + top bar + generous content column.
- * Content is capped at a comfortable measure so dashboards stay scannable on
- * ultrawide displays rather than stretching into unreadable rows.
- */
+
+
+
+
+
 export function AppShell({ user, repoLabel, children }: AppShellProps) {
   return (
     <div className="min-h-screen bg-[hsl(var(--background))]">

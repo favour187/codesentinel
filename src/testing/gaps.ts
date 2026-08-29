@@ -8,25 +8,25 @@ import { TwinGraph } from '@/twin/graph';
 import { loadSymbols } from '@/twin/graph';
 import type { GraphSymbol } from '@/twin/graph';
 
-/**
- * The test-gap engine.
- *
- * Answers "what is not tested, and what should the missing test check?" from
- * the Digital Twin alone. Deterministic first, always: the scenarios below
- * come from the parsed signature — parameter count, async-ness, branch count,
- * whether the symbol is reachable from an HTTP route or touches the database.
- * AI is only ever asked to phrase or expand these afterwards.
- *
- * COVERAGE HONESTY: nothing here measures coverage. A TESTS edge means a test
- * file imports a source file, which is evidence a module is exercised, not a
- * percentage of its lines. The word "coverage" is reserved for real coverage
- * reports, and `coverageAvailable` says plainly when there are none.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export interface TestScenario {
-  /** What the missing test should assert, in one line. */
+
   readonly description: string;
-  /** The parsed fact that implies this scenario is worth testing. */
+
   readonly rationale: string;
   readonly priority: 'high' | 'medium' | 'low';
 }
@@ -38,49 +38,49 @@ export interface TestGap {
   readonly signature: string | null;
   readonly lineStart: number;
   readonly complexity: number;
-  /** high when the symbol is exported, branchy and reachable from a route. */
+
   readonly severity: 'high' | 'medium' | 'low';
   readonly reason: string;
   readonly scenarios: readonly TestScenario[];
-  /**
-   * Test files that reference this file without actually covering it — the
-   * indexer records a TESTS edge only for a direct test-to-source import, so
-   * a file can be touched by a suite (via a helper, a fixture or a barrel)
-   * and still have no test asserting on it. These are the best places to add
-   * the missing case, and their presence is why this gap is not simply
-   * "nobody has looked at this file".
-   */
+
+
+
+
+
+
+
+
   readonly existingTests: readonly string[];
 }
 
 export interface TestIntelligence {
-  /** Frameworks actually detected in the repository's test files. */
+
   readonly frameworks: readonly string[];
   readonly testFileCount: number;
   readonly testCaseCount: number;
-  /** Source files with at least one test importing them. */
+
   readonly testedFileCount: number;
   readonly sourceFileCount: number;
-  /**
-   * Share of source files with a test importing them. This is a *linkage*
-   * ratio, not line coverage — see the note at the top of this module.
-   */
+
+
+
+
   readonly linkageRatio: number;
-  /** False whenever no real coverage report has been ingested. */
+
   readonly coverageAvailable: boolean;
   readonly untestedFiles: readonly string[];
   readonly testsWithoutAssertions: readonly string[];
 }
 
-/** Symbol kinds worth demanding a test for. Types and interfaces are not code. */
+
 const TESTABLE_KINDS = new Set(['function', 'class', 'method']);
 
-/**
- * Repository-level test intelligence.
- *
- * Frameworks, counts and linkage come from the scan's `tests` rows and the
- * twin's TESTS edges. Where a number would be a guess it is not reported.
- */
+
+
+
+
+
+
 export async function getTestIntelligence(repositoryId: string): Promise<TestIntelligence> {
   const db = await getDb();
   const scanId = await latestScanId(repositoryId);
@@ -122,9 +122,9 @@ export async function getTestIntelligence(repositoryId: string): Promise<TestInt
     testedFileCount: sourceFiles.filter((f) => tested.has(f.path)).length,
     sourceFileCount: sourceFiles.length,
     linkageRatio: sourceFiles.length === 0 ? 0 : (sourceFiles.length - untestedFiles.length) / sourceFiles.length,
-    // No coverage-report ingestion exists yet, so this is always false today.
-    // It is a field rather than a constant so the honest answer survives when
-    // report parsing lands, instead of the UI quietly implying a number.
+
+
+
     coverageAvailable: false,
     untestedFiles,
     testsWithoutAssertions: testRows
@@ -134,14 +134,14 @@ export async function getTestIntelligence(repositoryId: string): Promise<TestInt
   };
 }
 
-/**
- * Test gaps for a set of files — or the whole repository when none are given.
- *
- * A gap is an exported, testable symbol in a file no test imports. Symbols in
- * covered files are not reported: the test may or may not exercise that
- * specific function, and claiming otherwise would be the same overreach as
- * claiming a coverage percentage.
- */
+
+
+
+
+
+
+
+
 export async function detectTestGaps(
   repositoryId: string,
   filePaths?: readonly string[],
@@ -172,18 +172,18 @@ export async function detectTestGaps(
     candidates.map((f) => f.path),
   );
 
-  /*
-   * Test files in this scan, so a gap can point at the suite that already
-   * touches the file. Read from the scan's own rows rather than inferred from
-   * the path, so it matches what the scanner actually classified.
-   */
+
+
+
+
+
   const testPaths = new Set(
     (await db.select({ filePath: tests.filePath }).from(tests).where(eq(tests.scanId, scanId))).map(
       (t) => t.filePath,
     ),
   );
 
-  // Files whose symbols are reachable from a route, for severity weighting.
+
   const routeFiles = new Set(graph.routesOf(graph.files()).map((r) => r.filePath));
   const dbFiles = new Set(graph.databasesOf(graph.files()).map((d) => d.filePath));
 
@@ -197,7 +197,7 @@ export async function detectTestGaps(
     );
     if (fileSymbols.length === 0) continue;
 
-    // Anything importing this file inherits the risk of it being wrong.
+
     const dependents = graph.dependentsOf(file.path);
     const existingTests = dependents.filter((d) => testPaths.has(d)).sort();
     const exposesRoute = routeFiles.has(file.path);
@@ -239,13 +239,13 @@ export async function detectTestGaps(
     .slice(0, limit);
 }
 
-/**
- * Which scenarios a missing test should cover.
- *
- * Every scenario is tied to something the parser actually saw. A function with
- * no parameters gets no "invalid input" scenario, because there is no input to
- * make invalid — generic checklists are what make test suggestions ignorable.
- */
+
+
+
+
+
+
+
 export function scenariosFor(
   symbol: Pick<GraphSymbol, 'name' | 'kind' | 'parameters' | 'complexity' | 'signature'> & { isAsync?: boolean },
   context: { exposesRoute?: boolean; touchesDb?: boolean; sensitive?: boolean } = {},
@@ -310,7 +310,7 @@ export function scenariosFor(
   return scenarios;
 }
 
-/** Exported for direct testing — see docs/testing-intelligence.md. */
+
 export function gapSeverity(input: {
   complexity: number;
   dependents: number;
@@ -341,24 +341,24 @@ function gapReason(symbol: GraphSymbol, dependents: number, exposesRoute: boolea
   return `${parts.join(' · ')}.`;
 }
 
-/**
- * Files whose symbols are worth demanding a test for.
- *
- * `kind` is the classification `persistRepositoryIntelligence` stored, so a
- * test file is `kind === 'test'` — there is no `isTest` column on `files`.
- */
+
+
+
+
+
+
 function isSourceKind(kind: string | null): boolean {
   return kind !== 'test' && kind !== 'config' && kind !== 'infra' && kind !== 'documentation' && kind !== 'asset';
 }
 
-/**
- * Files that could meaningfully carry a test.
- *
- * `kind` alone is not enough: a README classifies as `source` because it is
- * neither test, config nor infra, and counting it as an untested source file
- * both understates the linkage ratio and puts documentation in a list of
- * things to write tests for. Only files a parser can read count.
- */
+
+
+
+
+
+
+
+
 function isTestableFile(kind: string | null, language: string | null): boolean {
   if (!isSourceKind(kind)) return false;
   return language !== null && SUPPORTED_LANGUAGES.includes(language);

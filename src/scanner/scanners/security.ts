@@ -2,30 +2,30 @@ import { createFinding } from '../finding';
 import type { Finding, ScanContext, Scanner, SourceFile } from '../types';
 import type { Category, Severity } from '@/db/schema';
 
-/**
- * Security scanner: dangerous command execution, injection, unsafe input
- * handling and weak cryptography.
- *
- * These are line-oriented rules with taint-ish heuristics — a rule fires only
- * when a dangerous sink is combined with evidence of dynamic/untrusted input
- * (string concatenation, template interpolation, or a request object). That
- * distinction is what keeps `exec('ls -la')` quiet while `exec('tar ' + name)`
- * is reported, and each rule below has a negative test asserting exactly that.
- */
+
+
+
+
+
+
+
+
+
+
 
 const SCANNER_ID = 'security';
 
-/**
- * Upper bound on findings from a single rule in a single file. Beyond this the
- * remaining count is attached to the last finding as `additionalOccurrences`,
- * so the signal is preserved without one bad file flooding the report.
- */
+
+
+
+
+
 const MAX_HITS_PER_RULE_PER_FILE = 5;
 
-/** Marks a value as attacker-controlled in common web frameworks. */
+
 const USER_INPUT = /\breq(?:uest)?\.(?:body|query|params|headers|cookies)\b|\bctx\.request\b|\bevent\.(?:body|queryStringParameters)\b|\bprocess\.argv\b|\binput\(\)|\brequest\.(?:GET|POST|form|args|json)\b/;
 
-/** String concatenation or template interpolation — i.e. a dynamic value. */
+
 const DYNAMIC_STRING = /\+\s*[A-Za-z_$][\w$.[\]]*|\$\{[^}]+\}|%s|\.format\(|f["']/;
 
 interface Rule {
@@ -34,11 +34,11 @@ interface Rule {
   severity: Severity;
   category: Category;
   languages: string[] | 'any';
-  /** Primary dangerous sink. */
+
   match: RegExp;
-  /** Additional condition on the same line for the rule to fire. */
+
   requires?: RegExp;
-  /** Suppresses the rule when matched on the same line. */
+
   unless?: RegExp;
   description: string;
   whyItMatters: string;
@@ -48,7 +48,7 @@ interface Rule {
 }
 
 const RULES: Rule[] = [
-  /* ---------------------------- command execution --------------------------- */
+
   {
     ruleId: 'security/command-injection',
     title: 'Command injection via shell execution',
@@ -106,7 +106,7 @@ const RULES: Rule[] = [
     confidence: 0.9,
   },
 
-  /* -------------------------------- injection ------------------------------- */
+
   {
     ruleId: 'security/sql-injection',
     title: 'SQL injection through string concatenation',
@@ -179,7 +179,7 @@ const RULES: Rule[] = [
     confidence: 0.7,
   },
 
-  /* ------------------------------ authn / crypto ---------------------------- */
+
   {
     ruleId: 'security/weak-hash',
     title: 'Weak hash algorithm used for sensitive data',
@@ -301,7 +301,7 @@ const RULES: Rule[] = [
   },
 ];
 
-/** Strips comments and string bodies so rules match code, not prose. */
+
 function isCommentLine(line: string, language: string): boolean {
   const trimmed = line.trim();
   if (language === 'python' || language === 'shell' || language === 'yaml') return trimmed.startsWith('#');
@@ -313,25 +313,25 @@ function ruleApplies(rule: Rule, file: SourceFile): boolean {
   return rule.languages.includes(file.language);
 }
 
-/**
- * SQL injection needs a small multi-line window: the query is often built on
- * one line and interpolated on the next.
- */
+
+
+
+
 function windowAt(file: SourceFile, index: number, size = 2): string {
   return file.lines.slice(index, index + size).join('\n');
 }
 
-/**
- * Within a multi-line match window, picks the line that carries the dangerous
- * construct so the reported line and evidence point at the real sink.
- */
+
+
+
+
 function anchorLine(file: SourceFile, start: number, pattern: RegExp): number {
   const single = new RegExp(pattern.source, pattern.flags.replace('g', ''));
   for (let j = start; j < Math.min(file.lines.length, start + 2); j += 1) {
     const candidate = file.lines[j] ?? '';
     if (/['"`]\s*\+|\$\{|%s|\.format\(/.test(candidate) && single.test(candidate)) return j;
   }
-  // Fall back to the first line with an interpolation marker, else the window start.
+
   for (let j = start; j < Math.min(file.lines.length, start + 2); j += 1) {
     if (/['"`]\s*\+|\$\{|%s|\.format\(/.test(file.lines[j] ?? '')) return j;
   }
@@ -356,25 +356,25 @@ function scanFile(file: SourceFile): Finding[] {
       if (rule.requires && !rule.requires.test(haystack) && !USER_INPUT.test(haystack)) continue;
       if (rule.unless && rule.unless.test(haystack)) continue;
 
-      // Each occurrence is a separately exploitable site needing its own fix,
-      // so they are reported individually rather than collapsed to the first.
-      // Reporting only one per file turns remediation into whack-a-mole: the
-      // developer fixes line 8, re-scans, and a "new" critical appears at line
-      // 14 that was there all along. The cap keeps a pathological file from
-      // burying every other finding.
+
+
+
+
+
+
       hits += 1;
       if (hits > MAX_HITS_PER_RULE_PER_FILE) {
         suppressed += 1;
         continue;
       }
 
-      // The window may open a line or two above the actual sink (a query built
-      // inside a try block, for instance). Report the line carrying the
-      // interpolation, otherwise the evidence reads "try {" and tells the
-      // developer nothing about what is wrong.
+
+
+
+
       const anchor = multiline ? anchorLine(file, i, rule.match) : i;
 
-      // A dangerous sink fed by an explicit request object is near-certain.
+
       const tainted = USER_INPUT.test(windowAt(file, Math.max(0, i - 3), 5));
       const confidence = Math.min(0.98, tainted ? rule.confidence + 0.1 : rule.confidence);
 
@@ -398,10 +398,10 @@ function scanFile(file: SourceFile): Finding[] {
         }),
       );
 
-      // A multi-line rule reports a finding spanning lines i..i+1, so the next
-      // window must start past it. Without this the same statement is reported
-      // twice: once from the window opening on the preceding line and once
-      // from the line itself.
+
+
+
+
       if (multiline) i += 1;
     }
 
@@ -426,7 +426,7 @@ export const securityScanner: Scanner = {
   async scan(ctx: ScanContext): Promise<Finding[]> {
     const findings: Finding[] = [];
     for (const file of ctx.files) {
-      if (file.isTest) continue; // test fixtures legitimately contain unsafe patterns
+      if (file.isTest) continue;
       if (!['javascript', 'typescript', 'python', 'ruby', 'go', 'php', 'java'].includes(file.language)) continue;
       findings.push(...scanFile(file));
     }

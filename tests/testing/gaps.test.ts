@@ -30,7 +30,7 @@ describe('gapSeverity', () => {
   });
 
   it('escalates a sensitive symbol above an equivalent ordinary one', () => {
-    // complexity 3 scores 1 (low); the sensitive path adds 2, reaching medium.
+
     expect(gapSeverity({ ...base, complexity: 3 })).toBe('low');
     expect(gapSeverity({ ...base, complexity: 3, sensitive: true })).toBe('medium');
   });
@@ -215,8 +215,8 @@ describe('detectTestGaps', () => {
     await seedRepo();
     const gap = (await detectTestGaps(repositoryId)).find((g) => g.symbolName === 'createSession');
 
-    // 5 decision points (+1) on a sensitive auth path (+2) = medium. It has no
-    // dependents and no route, which is what keeps it below high.
+
+
     expect(gap?.severity).toBe('medium');
   });
 
@@ -238,11 +238,11 @@ describe('detectTestGaps', () => {
     expect(await detectTestGaps(repositoryId)).toEqual([]);
   });
 
-  /**
-   * Regression: the TypeScript parser used to set `isExported` only from the
-   * `export` keyword, so a CommonJS codebase reported zero exported symbols
-   * and this engine silently found zero gaps in a repository full of them.
-   */
+
+
+
+
+
   it('finds gaps in a CommonJS file whose exports come from module.exports', async () => {
     const { parseFile } = await import('@/twin/parsers');
     const parsed = parseFile(

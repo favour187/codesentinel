@@ -1,10 +1,10 @@
-// DEMO FIXTURE — frontend component with an intentional XSS sink.
-// Planted: innerHTML with untrusted input (CWE-79).
+
+
 
 const { login } = require('../routes/auth');
 
 function renderLoginForm(container, state) {
-  // Unescaped interpolation of a server-supplied error message into innerHTML.
+
   container.innerHTML = `
     <form id="login">
       <input name="email" value="${state.email}" />

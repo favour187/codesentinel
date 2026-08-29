@@ -1,20 +1,20 @@
 import { createFinding } from '../finding';
 import type { Finding, ScanContext, Scanner, SourceFile } from '../types';
 
-/**
- * Hardcoded credential detection.
- *
- * Two complementary strategies:
- *   1. High-precision provider patterns (AWS, Stripe, GitHub, Slack, private
- *      keys) — distinctive prefixes, so confidence is high.
- *   2. Generic assignment detection (`password = "..."`) gated on a Shannon
- *      entropy threshold and a placeholder blocklist, which is where naive
- *      secret scanners generate most of their false positives.
- *
- * The matched credential is NEVER stored: every finding passes the captured
- * value through `redact`, so only a masked form (sk_live_••••••7dc) is
- * persisted or displayed.
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const SCANNER_ID = 'secrets';
 
@@ -22,17 +22,17 @@ interface SecretPattern {
   ruleId: string;
   title: string;
   regex: RegExp;
-  /** Which capture group holds the secret itself. */
+
   secretGroup: number;
   severity: 'critical' | 'high' | 'medium';
   description: string;
   minEntropy?: number;
-  /**
-   * Apply the placeholder blocklist to this provider rule. Off by default:
-   * a real `AKIA...` key is a leak whatever it is named. On for rules whose
-   * captured group is free-form text (connection-string passwords), where
-   * `user:password@host` in docs would otherwise be reported as a live secret.
-   */
+
+
+
+
+
+
   rejectPlaceholders?: boolean;
 }
 
@@ -94,11 +94,11 @@ const PROVIDER_PATTERNS: SecretPattern[] = [
     description: 'A Google API key is hardcoded in the repository.',
   },
   {
-    // Credentials inside a connection URI are one of the most common real-world
-    // leaks and are missed by keyword rules, because the password sits in the
-    // URI authority rather than after a `password =`. Only the password
-    // component is captured, so the host and database name stay readable in the
-    // masked evidence and the finding is still actionable.
+
+
+
+
+
     ruleId: 'secret/connection-string-credential',
     title: 'Credentials embedded in a connection string',
     regex:
@@ -111,15 +111,15 @@ const PROVIDER_PATTERNS: SecretPattern[] = [
   },
 ];
 
-/**
- * Generic `SOMETHING_SECRET = "value"` detection.
- * Entropy-gated because this pattern is otherwise a false-positive machine.
- */
+
+
+
+
 const GENERIC_PATTERN: SecretPattern = {
   ruleId: 'secret/hardcoded-credential',
   title: 'Hardcoded credential in source code',
-  // The prefix is optional: a bare `password: "..."` key must match just as a
-  // prefixed `DB_PASSWORD = "..."` does.
+
+
   regex:
     /\b([A-Za-z0-9_]{0,40}(?:password|passwd|secret|token|api[_-]?key|apikey|access[_-]?key|auth|credential)[A-Za-z0-9_]{0,20})\s*[:=]\s*['"]([^'"\n]{8,120})['"]/gi,
   secretGroup: 2,
@@ -128,13 +128,13 @@ const GENERIC_PATTERN: SecretPattern = {
   minEntropy: 2.6,
 };
 
-/** Obvious non-secrets: samples, templates, env indirection. */
+
 const PLACEHOLDER_PATTERN =
   /^(?:x{3,}|\*{3,}|\.{3,}|<[^>]+>|\$\{[^}]*\}|%[a-z_]+%|null|none|undefined|true|false|changeme|change[_-]?me|example|examples?|sample|placeholder|your[_-].*|my[_-]?secret|todo|tbd|redacted|dummy|test|testing|fake|foo|bar|baz|password|secret|token|abc123|123456\d*)$/i;
 
 const ENV_INDIRECTION = /process\.env|os\.environ|getenv|import\.meta\.env|ENV\[|config\.get|vault|secretsmanager/i;
 
-/** Shannon entropy in bits/char — random-looking strings score above ~3. */
+
 export function shannonEntropy(value: string): number {
   if (!value) return 0;
   const frequencies = new Map<string, number>();
@@ -152,12 +152,12 @@ export function isLikelyPlaceholder(value: string): boolean {
   if (trimmed.length < 8) return true;
   if (PLACEHOLDER_PATTERN.test(trimmed)) return true;
   if (ENV_INDIRECTION.test(trimmed)) return true;
-  // A single repeated character, e.g. "aaaaaaaaaaaa".
+
   if (/^(.)\1+$/.test(trimmed)) return true;
   return false;
 }
 
-/** Files where credential-shaped strings are expected and not a finding. */
+
 function isExampleFile(file: SourceFile): boolean {
   const p = file.path.toLowerCase();
   return p.endsWith('.env.example') || p.endsWith('.env.sample') || p.endsWith('.env.template');
@@ -176,16 +176,16 @@ function scanFile(file: SourceFile): Finding[] {
   const findings: Finding[] = [];
   const patterns = [...PROVIDER_PATTERNS, GENERIC_PATTERN];
 
-  /**
-   * Values already reported by a high-precision provider rule. The generic
-   * entropy rule would otherwise re-report the same credential at lower
-   * confidence — one secret must produce exactly one finding, and the
-   * provider-specific rule is the more useful of the two because it names the
-   * provider whose key needs rotating.
-   *
-   * Provider patterns are ordered first in `patterns`, so this set is fully
-   * populated by the time the generic rule runs.
-   */
+
+
+
+
+
+
+
+
+
+
   const claimed = new Set<string>();
 
   for (const pattern of patterns) {
@@ -220,9 +220,9 @@ function scanFile(file: SourceFile): Finding[] {
           filePath: file.path,
           lineStart: line,
           evidence: rawLine,
-          // Redaction is the whole point of this scanner: mask the value AND
-          // fingerprint on a derived seed so the raw secret is never hashed
-          // into anything stored next to the masked display form.
+
+
+
           redact: [secret],
           fingerprintSeed: `${pattern.ruleId}:${secret.slice(0, 4)}:${secret.length}`,
           confidence: isGeneric ? 0.7 : 0.95,
@@ -254,7 +254,7 @@ export const secretsScanner: Scanner = {
   async scan(ctx: ScanContext): Promise<Finding[]> {
     const findings: Finding[] = [];
     for (const file of ctx.files) {
-      if (file.language === 'markdown') continue; // docs legitimately show sample keys
+      if (file.language === 'markdown') continue;
       findings.push(...scanFile(file));
     }
     return findings;

@@ -65,8 +65,8 @@ describe('verifyWebhookSignature', () => {
   });
 
   it('FAILS CLOSED when no secret is configured', () => {
-    // The dangerous failure mode: an unconfigured deployment must reject every
-    // delivery, never accept unsigned ones.
+
+
     process.env.GITHUB_WEBHOOK_SECRET = '';
     resetEnvCache();
     const body = '{}';
@@ -77,7 +77,7 @@ describe('verifyWebhookSignature', () => {
   });
 
   it('is byte-exact: whitespace differences invalidate the signature', () => {
-    // This is why the route must read raw text and never re-serialize JSON.
+
     const original = '{"a":1,"b":2}';
     const signature = sign(original);
     const reserialized = JSON.stringify(JSON.parse(original) as unknown) + ' ';

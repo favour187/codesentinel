@@ -3,11 +3,11 @@ import { computeBlastRadius, hotspotPaths, impactBand, scoreImpact } from '@/ana
 import { createTestDb, seedRepository, seedScan } from '../helpers/test-db';
 import type { TestDb } from '../helpers/test-db';
 
-/**
- * Blast radius is computed entirely from the scanned import graph. These tests
- * pin down that it reports what the graph actually says — no more, and in
- * particular never a dependency that was not recorded.
- */
+
+
+
+
+
 
 let db: TestDb;
 let repositoryId: string;
@@ -22,11 +22,11 @@ beforeEach(async () => {
   ({ repositoryId } = await seedRepository(db));
 });
 
-/**
- *   src/lib/db.ts  <-- src/services/user.ts  <-- src/api/users/route.ts
- *                  <-- src/services/order.ts
- *   src/lib/unused.ts  (nothing imports it)
- */
+
+
+
+
+
 async function seedGraph() {
   return seedScan(db, repositoryId, {
     files: [

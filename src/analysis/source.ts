@@ -9,29 +9,29 @@ import { demoFixturePath } from '@/lib/demo/fixture';
 import { createLogger } from '@/lib/logger';
 import { redactSecrets } from '@/ai/redaction';
 
-/**
- * Read the current content of a repository file.
- *
- * AI features need real source, not the excerpt frozen into a finding at scan
- * time. Two backends, one interface:
- *  - **demo** repositories read the bundled local fixture,
- *  - **github** repositories read through the installation-authenticated API.
- *
- * Content is redacted before it leaves this module. That makes it impossible
- * for a caller to obtain raw secret material by way of a "read this file"
- * helper, whatever it then does with the text.
- */
+
+
+
+
+
+
+
+
+
+
+
+
 
 const log = createLogger('analysis:source');
 
-/** Refuse to load anything a prompt could not use anyway. */
+
 const MAX_FILE_BYTES = 512 * 1024;
 
 export interface SourceFile {
   readonly path: string;
   readonly content: string;
   readonly truncated: boolean;
-  /** Kinds of secret redacted before returning, for display. */
+
   readonly redacted: readonly string[];
 }
 
@@ -61,11 +61,11 @@ export async function readRepositoryFile(repositoryId: string, path: string): Pr
 }
 
 async function readLocalFile(rootDir: string, path: string): Promise<string | null> {
-  /*
-   * Resolve and re-check containment. sanitizeRepoPath already rejects `..`,
-   * but a symlink inside the fixture could still point outside it, and this is
-   * the boundary where that would matter.
-   */
+
+
+
+
+
   const root = resolve(rootDir);
   const target = resolve(join(root, path));
   if (target !== root && !target.startsWith(root + sep)) {
@@ -108,12 +108,12 @@ async function readGitHubFile(
   }
 }
 
-/**
- * Normalise a repository-relative path and reject traversal.
- *
- * Paths reaching here can originate from an AI response or a query parameter,
- * so neither is trusted. Returns null for anything not clearly inside the repo.
- */
+
+
+
+
+
+
 export function sanitizeRepoPath(path: string): string | null {
   if (!path || path.length > 400) return null;
   if (path.includes('\0')) return null;

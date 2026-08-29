@@ -2,14 +2,14 @@ import { NextResponse } from 'next/server';
 import { assertRepositoryAccess, ForbiddenError, requireUser, UnauthorizedError } from '@/lib/auth/current-user';
 import { createLogger } from '@/lib/logger';
 
-/**
- * Shared plumbing for API route handlers.
- *
- * The AI features add a lot of routes that all need the same three things:
- * an authenticated user, a repository access check, and error handling that
- * never leaks an internal message to the client. Repeating that per route is
- * how one of them ends up missing the access check.
- */
+
+
+
+
+
+
+
+
 
 const log = createLogger('api');
 
@@ -18,12 +18,12 @@ export interface RouteContext {
   readonly repositoryId: string;
 }
 
-/**
- * Run a handler with the caller authenticated and authorised for a repository.
- *
- * Any thrown error becomes a sanitised JSON response: the detail goes to the
- * server log, the client gets a status code and a generic message.
- */
+
+
+
+
+
+
 export async function withRepositoryAccess(
   repositoryId: string,
   handler: (ctx: RouteContext) => Promise<NextResponse>,
@@ -37,7 +37,7 @@ export async function withRepositoryAccess(
   }
 }
 
-/** As above, without a repository in scope. */
+
 export async function withUser(handler: (userId: string) => Promise<NextResponse>): Promise<NextResponse> {
   try {
     const user = await requireUser();
@@ -53,8 +53,8 @@ export function errorResponse(err: unknown): NextResponse {
   }
 
   if (err instanceof ForbiddenError) {
-    // Deliberately the same shape as a 404: confirming that a repository
-    // exists but is not yours is itself an information leak.
+
+
     return NextResponse.json({ ok: false, error: 'Repository not found' }, { status: 404 });
   }
 
@@ -66,7 +66,7 @@ export function errorResponse(err: unknown): NextResponse {
   return NextResponse.json({ ok: false, error: 'Something went wrong. Please try again.' }, { status: 500 });
 }
 
-/** A client-caused error whose message is safe to show. */
+
 export class BadRequestError extends Error {
   constructor(message: string) {
     super(message);
@@ -74,7 +74,7 @@ export class BadRequestError extends Error {
   }
 }
 
-/** Parse a JSON body, rejecting anything that is not an object. */
+
 export async function readJsonBody(request: Request): Promise<Record<string, unknown>> {
   try {
     const body: unknown = await request.json();
@@ -117,13 +117,13 @@ export function optionalStringArray(body: Record<string, unknown>, key: string, 
   return value as string[];
 }
 
-/**
- * Translate an AI result into an HTTP response.
- *
- * "Unavailable" is deliberately 503 with an explanatory message rather than an
- * error: the user has done nothing wrong, the deterministic product still
- * works, and the UI shows this as an inline notice.
- */
+
+
+
+
+
+
+
 export function aiErrorResponse(reason: string, message: string): NextResponse {
   const status = reason === 'unavailable' ? 503 : reason === 'ungrounded' ? 422 : 502;
   return NextResponse.json({ ok: false, error: message, reason }, { status });

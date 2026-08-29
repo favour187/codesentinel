@@ -5,14 +5,14 @@ export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
 }
 
-/** Format a number compactly: 1200 -> 1.2k */
+
 export function compactNumber(n: number): string {
   return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 })
     .format(n)
     .replace('K', 'k');
 }
 
-/** Relative time, e.g. "3 minutes ago". */
+
 export function timeAgo(date: Date | string | null | undefined): string {
   if (!date) return 'never';
   const d = typeof date === 'string' ? new Date(date) : date;
@@ -20,7 +20,7 @@ export function timeAgo(date: Date | string | null | undefined): string {
   if (Number.isNaN(seconds)) return 'unknown';
   if (seconds < 45) return 'just now';
 
-  // Compact units keep dense tables readable: "3h ago", not "3 hours ago".
+
   const units: Array<[suffix: string, seconds: number]> = [
     ['y', 31_536_000],
     ['mo', 2_592_000],
@@ -46,19 +46,19 @@ export function formatDuration(ms: number | null | undefined): string {
   return `${Math.floor(ms / 60_000)}m ${Math.round((ms % 60_000) / 1000)}s`;
 }
 
-/** Clamp to [min,max]. */
+
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-/** Shorten a repo path for display: src/very/deep/file.ts -> …/deep/file.ts */
+
 export function shortenPath(path: string, maxLength = 40): string {
   if (path.length <= maxLength) return path;
 
   const parts = path.split('/');
   const fileName = parts[parts.length - 1] ?? path;
 
-  // Always keep the file name legible, even if it alone exceeds the budget.
+
   if (fileName.length + 2 >= maxLength) return `…/${fileName}`;
 
   let result = fileName;

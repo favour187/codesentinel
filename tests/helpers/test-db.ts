@@ -4,37 +4,37 @@ import { sql } from 'drizzle-orm';
 import * as schema from '@/db/schema';
 import { BOOTSTRAP_SQL, splitStatements } from '@/db/bootstrap';
 
-/**
- * Creates a fresh, fully-migrated, in-memory PostgreSQL database per test.
- *
- * PGlite is real PostgreSQL (WASM), so these tests exercise the same SQL,
- * constraints and JSONB behaviour as production — not a mock.
- */
+
+
+
+
+
+
 export type TestDb = ReturnType<typeof drizzle<typeof schema>>;
 
-/**
- * One PGlite instance per worker process, reused by every test.
- *
- * Each instance holds a WASM heap that is never returned to the OS — closing
- * the handle does not shrink RSS. Building a fresh database per test therefore
- * grows memory monotonically until the kernel OOM-kills the worker, which
- * Vitest reports as the misleading "Worker exited unexpectedly". Creating the
- * database once and truncating between tests keeps the isolation that matters
- * (no row survives a test) at a fixed memory cost, and is far faster: the
- * bootstrap DDL runs once per process instead of once per test.
- */
+
+
+
+
+
+
+
+
+
+
+
 let shared: TestDb | null = null;
 let sharedClient: PGlite | null = null;
-/** Tables to clear between tests, resolved once from the live schema. */
+
 let truncatable: string[] = [];
 
 export async function closeTestDbs(): Promise<void> {
-  // Between tests, wipe rows rather than tearing down the WASM instance.
+
   if (!shared || truncatable.length === 0) return;
   await shared.execute(sql.raw(`TRUNCATE TABLE ${truncatable.join(', ')} RESTART IDENTITY CASCADE`));
 }
 
-/** Drop the shared instance. Only for tests that need a genuinely empty database. */
+
 export async function destroyTestDb(): Promise<void> {
   await sharedClient?.close().catch(() => undefined);
   shared = null;
@@ -48,14 +48,14 @@ export async function createTestDb(): Promise<TestDb> {
   const client = new PGlite();
   const database = drizzle(client, { schema });
 
-  // Reuse the production splitter rather than re-implementing it: a second
-  // copy here is how the test harness and the real bootstrap drift apart.
+
+
   for (const statement of splitStatements(BOOTSTRAP_SQL)) {
     await database.execute(sql.raw(statement));
   }
 
-  // Ask the database what exists rather than hardcoding a list that would
-  // silently go stale the next time a table is added.
+
+
   const rows = await database.execute<{ tablename: string }>(
     sql.raw("SELECT tablename FROM pg_tables WHERE schemaname = 'public'"),
   );
@@ -66,7 +66,7 @@ export async function createTestDb(): Promise<TestDb> {
   return database;
 }
 
-/** Insert a user + repository and return their ids. */
+
 export async function seedRepository(
   database: TestDb,
   opts: { login?: string; githubId?: number; fullName?: string; source?: 'github' | 'demo' } = {},
@@ -124,13 +124,13 @@ export interface SeedFinding {
   remediation?: string | null;
 }
 
-/**
- * Seed a completed scan with files, findings and tests.
- *
- * Retrieval, blast radius and debt all read from the *latest completed scan*,
- * so anything exercising them needs a realistic scan row rather than bare
- * findings. Returns the ids the caller needs to assert against.
- */
+
+
+
+
+
+
+
 export async function seedScan(
   database: TestDb,
   repositoryId: string,

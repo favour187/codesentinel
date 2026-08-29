@@ -8,7 +8,7 @@ interface ScoreRingProps {
   className?: string;
 }
 
-/** Score → semantic colour. Shared by every score surface. */
+
 export function scoreTone(score: number): { color: string; label: string } {
   if (score >= 90) return { color: 'var(--success)', label: 'Excellent' };
   if (score >= 75) return { color: 'var(--low)', label: 'Good' };
@@ -17,10 +17,10 @@ export function scoreTone(score: number): { color: string; label: string } {
   return { color: 'var(--critical)', label: 'Critical' };
 }
 
-/**
- * Primary health indicator. Inline SVG (no chart library) so it renders in the
- * sandboxed preview and costs nothing in bundle size.
- */
+
+
+
+
 export function ScoreRing({ score, label, size = 148, strokeWidth = 10, className }: ScoreRingProps) {
   const clamped = Math.max(0, Math.min(100, score));
   const radius = (size - strokeWidth) / 2;
@@ -81,7 +81,7 @@ interface ScoreBarProps {
   detail?: string;
 }
 
-/** Compact sub-score row used beside the main ring. */
+
 export function ScoreBar({ label, score, detail }: ScoreBarProps) {
   const clamped = Math.max(0, Math.min(100, score));
   const tone = scoreTone(clamped);

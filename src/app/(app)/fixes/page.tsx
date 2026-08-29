@@ -26,12 +26,12 @@ const SEVERITY_VARIANT: Record<Severity, 'critical' | 'high' | 'medium' | 'low' 
   info: 'info',
 };
 
-/**
- * Fix Center — review a finding and the change that would resolve it.
- *
- * A list on the left, one finding in focus on the right. The selected finding
- * lives in the URL so a reviewer can link a colleague straight to it.
- */
+
+
+
+
+
+
 export default async function FixCenterPage({
   searchParams,
 }: {
@@ -74,7 +74,7 @@ export default async function FixCenterPage({
         />
       ) : (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
-          {/* Finding list */}
+          {}
           <nav aria-label="Open findings" className="space-y-2 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto lg:pr-1">
             <p className="px-1 pb-1 text-xs font-medium uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
               {findings.length} open finding{findings.length === 1 ? '' : 's'}
@@ -110,7 +110,7 @@ export default async function FixCenterPage({
             })}
           </nav>
 
-          {/* Review panel */}
+          {}
           <Card className="p-4 sm:p-6">
             {!isAIConfigured() ? <AIUnavailableNotice className="mb-6" /> : null}
 

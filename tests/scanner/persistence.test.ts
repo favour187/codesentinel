@@ -15,17 +15,17 @@ import {
 import { createTestDb, seedRepository, type TestDb } from '../helpers/test-db';
 import { sourceFile } from './helpers/source';
 
-/**
- * Persistence owns the finding lifecycle, and the lifecycle is where a scanner
- * product most easily lies to its users. The rule under test:
- *
- *   - a finding that stops reproducing  -> `resolved` (a real fix)
- *   - a finding that still reproduces   -> `superseded` (never fixed; the new
- *                                          scan simply owns the live row)
- *
- * Conflating them would make every re-scan look like a wave of fixes instantly
- * undone by a wave of regressions. These tests run against real PGlite.
- */
+
+
+
+
+
+
+
+
+
+
+
 
 type DbGlobal = {
   __codesentinel_db?: unknown;
@@ -119,7 +119,7 @@ describe('executeScan — first scan', () => {
 
     expect(introduced).toBe(result.findings.length);
     expect(resolved).toBe(0);
-    // Nothing to compare against on a first scan — do not invent a delta.
+
     expect(previousHealth).toBeNull();
     expect(healthDelta).toBeNull();
   });
@@ -171,7 +171,7 @@ describe('executeScan — re-scan with no changes', () => {
     const counts = await statusCounts();
     expect(counts['open']).toBe(second.result.findings.length);
     expect(counts['superseded']).toBe(first.result.findings.length);
-    // Nothing was fixed, so nothing may be recorded as resolved.
+
     expect(counts['resolved']).toBeUndefined();
   });
 
@@ -223,7 +223,7 @@ describe('executeScan — fixing an issue', () => {
   it('marks a finding resolved with resolvedAt once it stops reproducing', async () => {
     await scan();
 
-    // Remove the command injection, keeping the module otherwise intact.
+
     await writeFile(
       path.join(repoDir, 'src', 'app.js'),
       [
@@ -287,8 +287,8 @@ describe('openFingerprints', () => {
 
     await scan();
     const afterRescan = await openFingerprints(repositoryId);
-    // Superseded rows must not leak into the baseline, or the next diff would
-    // see phantom duplicates.
+
+
     expect(afterRescan.length).toBe(new Set(afterRescan).size);
   });
 
@@ -312,7 +312,7 @@ describe('repository intelligence', () => {
       .where(eq(schema.dependencies.repositoryId, repositoryId));
 
     expect(files.length).toBeGreaterThan(0);
-    // Old snapshots are pruned, so these tables never grow per scan.
+
     expect(files.every((f) => f.scanId === scanId)).toBe(true);
     expect(deps.every((d) => d.scanId === scanId)).toBe(true);
   });
@@ -337,8 +337,8 @@ describe('repository intelligence', () => {
     const findings = await findingRows();
     const scanIds = new Set(findings.map((f) => f.scanId));
 
-    // Findings from both scans are retained — that history is the audit trail
-    // Insights renders.
+
+
     expect(scanIds.size).toBe(2);
   });
 });

@@ -13,12 +13,12 @@ interface ConnectRepositoryProps {
   demoAvailable: boolean;
 }
 
-/**
- * First-run experience. Two honest paths:
- *  1. Connect a real GitHub repository (requires an OAuth session).
- *  2. Register the bundled demo fixture — a real local repository containing
- *     intentionally vulnerable code, scanned by the same real scanners.
- */
+
+
+
+
+
+
 export function ConnectRepository({ githubConnected, demoAvailable }: ConnectRepositoryProps) {
   const router = useRouter();
   const [pending, setPending] = React.useState<null | 'demo'>(null);
